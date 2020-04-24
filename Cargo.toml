@@ -3,7 +3,8 @@ name = "tex_atlas_2d"
 version = "0.1.0"
 authors = ["LambdaXymox <lambda.xymox@gmail.com>"]
 edition = "2018"
+description = "A crate for working with TexImage2D objects."
 
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
+stb_image = "0.2.2"

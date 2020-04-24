@@ -8,31 +8,31 @@ use std::mem;
 
 
 #[derive(Copy, Clone, Debug, Eq, PartialEq)]
-pub struct Rgba {
+pub struct RGBA {
     pub r: u8,
     pub g: u8,
     pub b: u8,
     pub a: u8,
 }
 
-impl Rgba {
+impl RGBA {
     #[inline]
-    pub const fn new(r: u8, g: u8, b: u8, a: u8) -> Rgba {
-        Rgba { r: r, g: g, b: b, a: a }
+    pub const fn new(r: u8, g: u8, b: u8, a: u8) -> RGBA {
+        RGBA { r: r, g: g, b: b, a: a }
     }
 }
 
-impl Default for Rgba {
+impl Default for RGBA {
     #[inline]
-    fn default() -> Rgba {
-        Rgba::new(0, 0, 0, 255)
+    fn default() -> RGBA {
+        RGBA::new(0, 0, 0, 255)
     }
 }
 
-impl From<u32> for Rgba {
+impl From<u32> for RGBA {
     #[inline]
-    fn from(val: u32) -> Rgba {
-        Rgba {
+    fn from(val: u32) -> RGBA {
+        RGBA {
             r: ((val & 0xFF000000) >> 24) as u8,
             g: ((val & 0x00FF0000) >> 16) as u8,
             b: ((val & 0x0000FF00) >> 8) as u8,
@@ -46,7 +46,7 @@ pub struct TexImage2D {
     pub width: u32,
     pub height: u32,
     pub depth: u32,
-    pub data: Vec<Rgba>,
+    pub data: Vec<RGBA>,
 }
 
 impl TexImage2D {
@@ -55,11 +55,11 @@ impl TexImage2D {
             width: width,
             height: height,
             depth: 4,
-            data: vec![Rgba::default(); (width * height) as usize],
+            data: vec![RGBA::default(); (width * height) as usize],
         }
     }
 
-    pub fn from_rgba_data(width: u32, height: u32, data: Vec<Rgba>) -> TexImage2D {
+    pub fn from_rgba_data(width: u32, height: u32, data: Vec<RGBA>) -> TexImage2D {
         TexImage2D {
             width: width,
             height: height,
@@ -82,7 +82,7 @@ impl<'a> From<&'a image::Image<u8>> for TexImage2D {
     fn from(image: &'a image::Image<u8>) -> TexImage2D {
         let mut data = vec![];
         for chunk in image.data.chunks(4) {
-            data.push(Rgba::new(chunk[0], chunk[1], chunk[2], chunk[3]));
+            data.push(RGBA::new(chunk[0], chunk[1], chunk[2], chunk[3]));
         }
 
         TexImage2D {
@@ -172,7 +172,7 @@ pub fn load_from_memory(buffer: &[u8]) -> Result<TexImage2DResult, TexImage2DErr
 
     let tex_image_data = unsafe { 
         let (old_ptr, old_length, old_capacity) = image_data.data.into_raw_parts();
-        let ptr = mem::transmute::<*mut u8, *mut Rgba>(old_ptr);
+        let ptr = mem::transmute::<*mut u8, *mut RGBA>(old_ptr);
         let length = old_length / 4;
         let capacity = old_capacity / 4;
         Vec::from_raw_parts(ptr, length, capacity)
@@ -222,7 +222,7 @@ pub fn load_file<P: AsRef<Path>>(file_path: P) -> Result<TexImage2DResult, TexIm
 
     let tex_image_data = unsafe { 
         let (old_ptr, old_length, old_capacity) = image_data.data.into_raw_parts();
-        let ptr = mem::transmute::<*mut u8, *mut Rgba>(old_ptr);
+        let ptr = mem::transmute::<*mut u8, *mut RGBA>(old_ptr);
         let length = old_length / 4;
         let capacity = old_capacity / 4;
         Vec::from_raw_parts(ptr, length, capacity)
@@ -238,14 +238,14 @@ pub fn load_file<P: AsRef<Path>>(file_path: P) -> Result<TexImage2DResult, TexIm
 
 #[cfg(test)]
 mod tests {
-    use super::Rgba;
+    use super::RGBA;
 
 
     #[test]
     fn test_u32_to_rgba_conversion() {
         let val = 0x12345678;
-        let result = super::Rgba::from(val);
-        let expected = Rgba::new(0x12, 0x34, 0x56, 0x78);
+        let result = super::RGBA::from(val);
+        let expected = RGBA::new(0x12, 0x34, 0x56, 0x78);
 
         assert_eq!(result, expected);
     }

@@ -245,7 +245,7 @@ impl<T> TextureAtlas2DResult<T> {
 }
 
 /// Load a PNG texture image from a reader or buffer.
-pub fn load_from_memory(buffer: &[u8]) -> Result<TextureAtlas2DResult<RGBA>, TextureAtlas2DError> {
+fn load_image_from_memory(buffer: &[u8]) -> Result<TextureImage2D<RGBA>, TextureAtlas2DError> {
     let force_channels = 4;
     let mut image_data = match stbim::load_from_memory_with_depth(buffer, force_channels, false) {
         LoadResult::ImageU8(image_data) => image_data,
@@ -260,14 +260,14 @@ pub fn load_from_memory(buffer: &[u8]) -> Result<TextureAtlas2DResult<RGBA>, Tex
     let width = image_data.width;
     let height = image_data.height;
     let depth = image_data.depth;
-
+    /*
     // Check that the image size is a power of two.
     let warnings = if (width & (width - 1)) != 0 || (height & (height - 1)) != 0 {
         TextureAtlas2DWarning::TextureDimensionsAreNotAPowerOfTwo
     } else {
         TextureAtlas2DWarning::NoWarnings
     };
-
+    */
     let width_in_bytes = 4 *width;
     let half_height = height / 2;
     for row in 0..half_height {
@@ -286,25 +286,13 @@ pub fn load_from_memory(buffer: &[u8]) -> Result<TextureAtlas2DResult<RGBA>, Tex
         Vec::from_raw_parts(ptr, length, capacity)
     };
     let tex_image = TextureImage2D::<RGBA>::from_rgba_data(width, height, tex_image_data);
-    let atlas = TextureAtlas2D {
-        width: width,
-        height: height,
-        depth: depth,
-        origin: Origin::BottomLeft,
-        names: vec![],
-        uv_offsets: vec![],
-        pixel_offsets: vec![],
-        data: tex_image,
-    };
 
-    Ok(TextureAtlas2DResult {
-        atlas: atlas,
-        warnings: warnings,
-    })
+    Ok(tex_image)
+
 }
 
 /// Load a PNG texture image from a file name.
-pub fn load_file<P: AsRef<Path>>(file_path: P) -> Result<TextureAtlas2DResult<RGBA>, TextureAtlas2DError> {
+fn load_image_file<P: AsRef<Path>>(file_path: P) -> Result<TextureImage2D<RGBA>, TextureAtlas2DError> {
     let force_channels = 4;
     let mut image_data = match stbim::load_with_depth(&file_path, force_channels, false) {
         LoadResult::ImageU8(image_data) => image_data,
@@ -319,13 +307,6 @@ pub fn load_file<P: AsRef<Path>>(file_path: P) -> Result<TextureAtlas2DResult<RG
     let width = image_data.width;
     let height = image_data.height;
     let depth = image_data.depth;
-
-    // Check that the image size is a power of two.
-    let warnings = if (width & (width - 1)) != 0 || (height & (height - 1)) != 0 {
-        TextureAtlas2DWarning::TextureDimensionsAreNotAPowerOfTwo
-    } else {
-        TextureAtlas2DWarning::NoWarnings
-    };
 
     let width_in_bytes = 4 * width;
     let half_height = height / 2;
@@ -344,6 +325,21 @@ pub fn load_file<P: AsRef<Path>>(file_path: P) -> Result<TextureAtlas2DResult<RG
         Vec::from_raw_parts(ptr, length, capacity)
     };
     let tex_image = TextureImage2D::<RGBA>::from_rgba_data(width, height, tex_image_data);
+
+    Ok(tex_image)
+}
+
+
+pub fn from_reader<R: io::Read + io::Seek>(reader: R) -> Result<TextureAtlas2DResult<RGBA>, TextureAtlas2DError> {
+    unimplemented!()
+    /*
+    // Check that the image size is a power of two.
+    let warnings = if (width & (width - 1)) != 0 || (height & (height - 1)) != 0 {
+        TextureAtlas2DWarning::TextureDimensionsAreNotAPowerOfTwo
+    } else {
+        TextureAtlas2DWarning::NoWarnings
+    };
+
     let atlas = TextureAtlas2D {
         width: width,
         height: height,
@@ -359,11 +355,7 @@ pub fn load_file<P: AsRef<Path>>(file_path: P) -> Result<TextureAtlas2DResult<RG
         atlas: atlas,
         warnings: warnings,
     })
-}
-
-
-pub fn from_reader<R: io::Read + io::Seek>(reader: R) -> Result<TextureAtlas2DResult<RGBA>, TextureAtlas2DError> {
-    unimplemented!()
+    */
 }
 
 pub fn to_writer<W: io::Write + io::Seek>(writer: W, atlas: &TextureAtlas2D<RGBA>) -> io::Result<()> {
@@ -401,6 +393,18 @@ pub fn to_writer<W: io::Write + io::Seek>(writer: W, atlas: &TextureAtlas2D<RGBA
     zip_file.finish()?;
 
     Ok(())
+}
+
+/// Load a texture atlas directly from a file.
+pub fn load<P: AsRef<Path>>(path: P) -> Result<TextureAtlas2DResult<RGBA>, TextureAtlas2DError> {
+    /*
+    let reader = File::open(&path).map_err(|e| {
+        Error::new(ErrorKind::FileNotFound, Box::new(e))
+    })?;
+    */
+    let reader = File::open(&path).unwrap();
+
+    from_reader(reader)
 }
 
 pub fn write_to_file<P: AsRef<Path>>(path: P, atlas: &TextureAtlas2D<RGBA>) -> io::Result<()> {

@@ -41,52 +41,6 @@ impl From<u32> for RGBA {
     }
 }
 
-#[derive(Clone, Debug, PartialEq)]
-pub struct TexImage2D {
-    pub width: u32,
-    pub height: u32,
-    pub depth: u32,
-    pub data: Vec<RGBA>,
-}
-
-impl TexImage2D {
-    pub fn new(width: u32, height: u32) -> TexImage2D {
-        TexImage2D {
-            width: width,
-            height: height,
-            depth: 4,
-            data: vec![RGBA::default(); (width * height) as usize],
-        }
-    }
-
-    pub fn from_rgba_data(width: u32, height: u32, data: Vec<RGBA>) -> TexImage2D {
-        TexImage2D {
-            width: width,
-            height: height,
-            depth: 4,
-            data: data,
-        }
-    }
-
-
-}
-
-impl<'a> From<&'a image::Image<u8>> for TexImage2D {
-    fn from(image: &'a image::Image<u8>) -> TexImage2D {
-        let mut data = vec![];
-        for chunk in image.data.chunks(4) {
-            data.push(RGBA::new(chunk[0], chunk[1], chunk[2], chunk[3]));
-        }
-
-        TexImage2D {
-            width: image.width as u32,
-            height: image.height as u32,
-            depth: image.depth as u32,
-            data: data,
-        }
-    }
-}
-
 #[derive(Copy, Clone, Debug, PartialEq, Eq)]
 pub enum TextureAtlas2DError {
     CouldNotLoadImageBuffer,

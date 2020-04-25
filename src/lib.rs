@@ -1,8 +1,6 @@
 #![feature(vec_into_raw_parts)]
 use image::png;
 use image::{ColorType, ImageDecoder};
-use stb_image::image as stbim;
-use stb_image::image::LoadResult;
 use serde_derive::{Deserialize, Serialize};
 
 use std::path::Path;
@@ -13,6 +11,7 @@ use std::io;
 use std::fs::File;
 use std::slice;
 use std::collections::hash_map::HashMap;
+use std::error;
 
 
 
@@ -51,25 +50,70 @@ impl From<u32> for RGBA {
 }
 
 #[derive(Copy, Clone, Debug, PartialEq, Eq)]
-pub enum TextureAtlas2DError {
+pub enum ErrorKind {
     CouldNotLoadImageBuffer,
     Got32BitFloatingPointImageInsteadOfByteImage,
 }
 
-impl fmt::Display for TextureAtlas2DError {
+impl fmt::Display for ErrorKind {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match *self {
-            TextureAtlas2DError::CouldNotLoadImageBuffer => {
+            ErrorKind::CouldNotLoadImageBuffer => {
                 write!(f, "{}", "Could not load image buffer.")
             }
-            TextureAtlas2DError::Got32BitFloatingPointImageInsteadOfByteImage => {
+            ErrorKind::Got32BitFloatingPointImageInsteadOfByteImage => {
                 write!(f, "{}", "Tried to load an image as byte vectors, got 32 bit floating point image instead.")
             }
         }
     }
 }
 
-impl Error for TextureAtlas2DError {
+#[derive(Debug)]
+struct Repr {
+    kind: ErrorKind,
+    error: Box<dyn error::Error + Send + Sync>,
+}
+
+impl fmt::Display for Repr {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "{}: {}", self.kind, self.error)
+    }
+}
+
+/// A `Error` is an error typing representing the results of the failure of
+/// a read or write operation.
+pub struct TextureAtlas2DError {
+    repr: Repr,
+}
+
+impl TextureAtlas2DError {
+    pub fn new(kind: ErrorKind, error: Box<dyn error::Error + Send + Sync>) -> TextureAtlas2DError {
+        TextureAtlas2DError {
+            repr: Repr {
+                kind: kind,
+                error: error,
+            }
+        }
+    }
+
+    pub fn kind(&self) -> ErrorKind {
+        self.repr.kind
+    }
+}
+
+impl fmt::Debug for TextureAtlas2DError {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        fmt::Debug::fmt(&self.repr, f)
+    }
+}
+
+impl fmt::Display for TextureAtlas2DError {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        fmt::Display::fmt(&self.repr, f)
+    }
+}
+
+impl error::Error for TextureAtlas2DError {
     fn source(&self) -> Option<&(dyn Error + 'static)> {
         None
     }
@@ -244,81 +288,32 @@ impl<T> TextureAtlas2DResult<T> {
     }
 }
 
-/// Load a PNG texture image from a reader or buffer.
-fn load_image_from_memory(buffer: &[u8]) -> Result<TextureImage2D<RGBA>, TextureAtlas2DError> {
-    let force_channels = 4;
-    let mut image_data = match stbim::load_from_memory_with_depth(buffer, force_channels, false) {
-        LoadResult::ImageU8(image_data) => image_data,
-        LoadResult::Error(_) => {
-            return Err(TextureAtlas2DError::CouldNotLoadImageBuffer);
-        }
-        LoadResult::ImageF32(_) => {
-            return Err(TextureAtlas2DError::Got32BitFloatingPointImageInsteadOfByteImage);
-        }
-    };
-
-    let width = image_data.width;
-    let height = image_data.height;
-    let depth = image_data.depth;
-    /*
-    // Check that the image size is a power of two.
-    let warnings = if (width & (width - 1)) != 0 || (height & (height - 1)) != 0 {
-        TextureAtlas2DWarning::TextureDimensionsAreNotAPowerOfTwo
-    } else {
-        TextureAtlas2DWarning::NoWarnings
-    };
-    */
-    let width_in_bytes = 4 *width;
-    let half_height = height / 2;
-    for row in 0..half_height {
-        for col in 0..width_in_bytes {
-            let temp = image_data.data[row * width_in_bytes + col];
-            image_data.data[row * width_in_bytes + col] = image_data.data[((height - row - 1) * width_in_bytes) + col];
-            image_data.data[((height - row - 1) * width_in_bytes) + col] = temp;
-        }
-    }
-
-    let tex_image_data = unsafe { 
-        let (old_ptr, old_length, old_capacity) = image_data.data.into_raw_parts();
-        let ptr = mem::transmute::<*mut u8, *mut RGBA>(old_ptr);
-        let length = old_length / 4;
-        let capacity = old_capacity / 4;
-        Vec::from_raw_parts(ptr, length, capacity)
-    };
-    let tex_image = TextureImage2D::<RGBA>::from_rgba_data(width, height, tex_image_data);
-
-    Ok(tex_image)
-
-}
-
-/// Load a PNG texture image from a file name.
-fn load_image_file<P: AsRef<Path>>(file_path: P) -> Result<TextureImage2D<RGBA>, TextureAtlas2DError> {
-    let force_channels = 4;
-    let mut image_data = match stbim::load_with_depth(&file_path, force_channels, false) {
-        LoadResult::ImageU8(image_data) => image_data,
-        LoadResult::Error(_) => {
-            return Err(TextureAtlas2DError::CouldNotLoadImageBuffer);
-        }
-        LoadResult::ImageF32(_) => {
-            return Err(TextureAtlas2DError::Got32BitFloatingPointImageInsteadOfByteImage);
-        }
-    };
-
-    let width = image_data.width;
-    let height = image_data.height;
-    let depth = image_data.depth;
+fn load_image_from_reader<R: io::Read + io::Seek>(reader: R) -> Result<TextureImage2D<RGBA>, TextureAtlas2DError> {
+    let png_reader = png::PngDecoder::new(reader).map_err(|e| {
+        let kind = ErrorKind::CouldNotLoadImageBuffer;
+        TextureAtlas2DError::new(kind, Box::new(e))
+    })?;
+    let (width, height) = png_reader.dimensions();
+    let (width, height) = (width as usize, height as usize);
+    let depth = png_reader.color_type().channel_count() as usize;
+    let mut image_data: Vec<u8> = vec![0; width * height * depth];
+    png_reader.read_image(&mut image_data).map_err(|e| {
+        let kind = ErrorKind::CouldNotLoadImageBuffer;
+        TextureAtlas2DError::new(kind, Box::new(e))
+    })?;
 
     let width_in_bytes = 4 * width;
     let half_height = height / 2;
     for row in 0..half_height {
         for col in 0..width_in_bytes {
-            let temp = image_data.data[row * width_in_bytes + col];
-            image_data.data[row * width_in_bytes + col] = image_data.data[((height - row - 1) * width_in_bytes) + col];
-            image_data.data[((height - row - 1) * width_in_bytes) + col] = temp;
+            let temp = image_data[row * width_in_bytes + col];
+            image_data[row * width_in_bytes + col] = image_data[((height - row - 1) * width_in_bytes) + col];
+            image_data[((height - row - 1) * width_in_bytes) + col] = temp;
         }
     }
+
     let tex_image_data = unsafe { 
-        let (old_ptr, old_length, old_capacity) = image_data.data.into_raw_parts();
+        let (old_ptr, old_length, old_capacity) = image_data.into_raw_parts();
         let ptr = mem::transmute::<*mut u8, *mut RGBA>(old_ptr);
         let length = old_length / 4;
         let capacity = old_capacity / 4;
@@ -327,6 +322,21 @@ fn load_image_file<P: AsRef<Path>>(file_path: P) -> Result<TextureImage2D<RGBA>,
     let tex_image = TextureImage2D::<RGBA>::from_rgba_data(width, height, tex_image_data);
 
     Ok(tex_image)
+}
+
+/// Load a PNG texture image from a reader or buffer.
+fn load_image_from_memory(buffer: &[u8]) -> Result<TextureImage2D<RGBA>, TextureAtlas2DError> {
+    let reader = io::Cursor::new(buffer);
+    load_image_from_reader(reader)   
+}
+
+/// Load a PNG texture image from a file name.
+fn load_image_from_file<P: AsRef<Path>>(file_path: P) -> Result<TextureImage2D<RGBA>, TextureAtlas2DError> {
+    let reader = File::open(file_path).map_err(|e| {
+        let kind = ErrorKind::CouldNotLoadImageBuffer;
+        TextureAtlas2DError::new(kind, Box::new(e))
+    })?;
+    load_image_from_reader(reader)
 }
 
 
@@ -363,7 +373,7 @@ pub fn to_writer<W: io::Write + io::Seek>(writer: W, atlas: &TextureAtlas2D<RGBA
     let options =
         zip::write::FileOptions::default().compression_method(zip::CompressionMethod::Stored);
 
-    // Write out the metadata.
+    // Write out the coordinate charts.
     zip_file.start_file("coordinate_charts.json", options)?;
     serde_json::to_writer_pretty(&mut zip_file, &atlas.coordinate_charts())?;
 

@@ -372,7 +372,7 @@ pub fn to_writer<W: io::Write + io::Seek>(writer: W, atlas: &TextureAtlas2D<RGBA
         zip::write::FileOptions::default().compression_method(zip::CompressionMethod::Stored);
 
     // Write out the metadata.
-    zip_file.start_file("coordinate_chart.json", options)?;
+    zip_file.start_file("coordinate_charts.json", options)?;
     serde_json::to_writer_pretty(&mut zip_file, &atlas.coordinate_charts())?;
 
     // if the origin is the bottom left of the image, we need to flip the image back over

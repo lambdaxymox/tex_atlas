@@ -100,9 +100,9 @@ pub struct PixelBoundingBox {
 
 #[derive(Clone, Debug)]
 pub struct TextureAtlas2D<T> {
-    width: usize,
-    height: usize,
-    depth: usize,
+    pub width: usize,
+    pub height: usize,
+    pub depth: usize,
     names: Vec<String>,
     uv_offsets: Vec<UVOffset>,
     pixel_offsets: Vec<PixelOffset>,
@@ -119,6 +119,22 @@ impl TextureAtlas2D<RGBA> {
     #[inline]
     pub fn as_ptr(&self) -> *const u8 {
         &self.data[0].r
+    }
+
+    pub fn from_rgba_data(width: usize, height: usize, data: Vec<RGBA>) -> TextureAtlas2D<RGBA> {
+        TextureAtlas2D {
+            width: width,
+            height: height,
+            depth: 4,
+            names: vec![],
+            uv_offsets: vec![],
+            pixel_offsets: vec![],
+            data: data,
+        }
+    }
+
+    pub fn image(&self) -> &[RGBA] {
+        &self.data
     }
 }
 
@@ -191,28 +207,28 @@ pub fn load_from_memory(buffer: &[u8]) -> Result<TextureAtlas2DResult, TextureAt
     })
 }
 
-/*
 /// Load a PNG texture image from a file name.
-pub fn load_file<P: AsRef<Path>>(file_path: P) -> Result<TexImage2DResult, TexImage2DError> {
+pub fn load_file<P: AsRef<Path>>(file_path: P) -> Result<TextureAtlas2DResult, TextureAtlas2DError> {
     let force_channels = 4;
     let mut image_data = match image::load_with_depth(&file_path, force_channels, false) {
         LoadResult::ImageU8(image_data) => image_data,
         LoadResult::Error(_) => {
-            return Err(TexImage2DError::CouldNotLoadImageBuffer);
+            return Err(TextureAtlas2DError::CouldNotLoadImageBuffer);
         }
         LoadResult::ImageF32(_) => {
-            return Err(TexImage2DError::Got32BitFloatingPointImageInsteadOfByteImage);
+            return Err(TextureAtlas2DError::Got32BitFloatingPointImageInsteadOfByteImage);
         }
     };
 
     let width = image_data.width;
     let height = image_data.height;
+    let depth = image_data.depth;
 
     // Check that the image size is a power of two.
     let warnings = if (width & (width - 1)) != 0 || (height & (height - 1)) != 0 {
-        TexImage2DWarning::TextureDimensionsAreNotAPowerOfTwo
+        TextureAtlas2DWarning::TextureDimensionsAreNotAPowerOfTwo
     } else {
-        TexImage2DWarning::NoWarnings
+        TextureAtlas2DWarning::NoWarnings
     };
 
     let width_in_bytes = 4 * width;
@@ -232,15 +248,22 @@ pub fn load_file<P: AsRef<Path>>(file_path: P) -> Result<TexImage2DResult, TexIm
         let capacity = old_capacity / 4;
         Vec::from_raw_parts(ptr, length, capacity)
     };
-    let tex_image = TexImage2D::from_rgba_data(width as u32, height as u32, tex_image_data);
-    let result = TexImage2DResult {
-        image: tex_image,
-        warnings: warnings,
+    let atlas = TextureAtlas2D {
+        width: width,
+        height: height,
+        depth: depth,
+        names: vec![],
+        uv_offsets: vec![],
+        pixel_offsets: vec![],
+        data: tex_image_data,
     };
 
-    Ok(result)
+    Ok(TextureAtlas2DResult {
+        atlas: atlas,
+        warnings: warnings,
+    })
 }
-*/
+
 
 
 #[cfg(test)]

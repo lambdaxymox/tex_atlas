@@ -1,9 +1,9 @@
 [package]
-name = "tex_atlas_2d"
+name = "tex_atlas"
 version = "0.1.0"
 authors = ["LambdaXymox <lambda.xymox@gmail.com>"]
 edition = "2018"
-description = "A crate for working with TexImage2D objects."
+description = "A crate for packing multiple textures into a single texture atlas for efficient manipulation by graphics hardware."
 
 
 [dependencies]

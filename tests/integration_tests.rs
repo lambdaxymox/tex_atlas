@@ -42,7 +42,7 @@ fn atlas() -> TextureAtlas2D<RGBA> {
 
 /// The file loader yields the correct width.
 #[test]
-fn test_load_file_yields_correct_width() {
+fn load_file_yields_correct_width() {
     let result = tex_atlas::load_file(SAMPLE_DATA).unwrap().atlas;
     let expected = atlas();
 
@@ -51,17 +51,26 @@ fn test_load_file_yields_correct_width() {
 
 /// The file loader yields the correct width.
 #[test]
-fn test_load_file_yields_correct_height() {
+fn load_file_yields_correct_height() {
     let result = tex_atlas::load_file(SAMPLE_DATA).unwrap().atlas;
     let expected = atlas();
 
     assert_eq!(result.height, expected.height);
 }
 
+/// The file loader yields the correct number of color channels.
+#[test]
+fn load_file_yields_correct_pixel_channel_count() {
+    let result = tex_atlas::load_file(SAMPLE_DATA).unwrap().atlas;
+    let expected = atlas();
+
+    assert_eq!(result.depth, expected.depth);
+}
+
 /// The number of pixels in the loaded image matches the number
 /// of pixels in the expected image.
 #[test]
-fn test_load_file_yields_correct_pixel_count() {
+fn load_file_yields_correct_pixel_count() {
     let result = tex_atlas::load_file(SAMPLE_DATA).unwrap().atlas;
     let expected = atlas();
 
@@ -72,7 +81,7 @@ fn test_load_file_yields_correct_pixel_count() {
 /// 
 /// `number of pixels == width * height.`
 #[test]
-fn test_height_times_width_equals_pixel_count() {
+fn height_times_width_equals_pixel_count() {
     let atlas = tex_atlas::load_file(SAMPLE_DATA).unwrap().atlas;
     let height = atlas.height as usize;
     let width = atlas.width as usize;
@@ -83,7 +92,7 @@ fn test_height_times_width_equals_pixel_count() {
 
 /// The file loader yields the correct data block.
 #[test]
-fn test_load_file_yields_correct_data_block() {
+fn load_file_yields_correct_data_block() {
     let result_atlas = tex_atlas::load_file(SAMPLE_DATA).unwrap().atlas;
     let expected_atlas = atlas();
     let result = result_atlas.pixel_slice();
@@ -94,7 +103,7 @@ fn test_load_file_yields_correct_data_block() {
 
 /// The file loader yields the expected texture image.
 #[test]
-fn test_load_file_yields_correct_texture_atlas_data() {
+fn load_file_yields_correct_texture_atlas_data() {
     let result_atlas = tex_atlas::load_file(SAMPLE_DATA).unwrap().atlas;
     let expected_atlas = atlas();
     let result = result_atlas.pixel_slice();

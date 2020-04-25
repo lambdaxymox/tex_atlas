@@ -148,6 +148,7 @@ pub enum TextureAtlas2DWarning {
     TextureDimensionsAreNotAPowerOfTwo,
 }
 
+
 #[derive(Copy, Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct UVOffset {
     pub u: f32,

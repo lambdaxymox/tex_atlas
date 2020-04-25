@@ -80,8 +80,8 @@ impl fmt::Display for Repr {
     }
 }
 
-/// A `Error` is an error typing representing the results of the failure of
-/// a read or write operation.
+/// An error type that represents the possible failures during the reading,
+/// writing, parsing, and encoding of a texture atlas.
 pub struct TextureAtlas2DError {
     repr: Repr,
 }

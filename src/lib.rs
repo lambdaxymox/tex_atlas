@@ -68,14 +68,7 @@ impl TexImage2D {
         }
     }
 
-    pub fn pixel_count(&self) -> usize {
-        self.data.len()
-    }
 
-    #[inline]
-    pub fn as_ptr(&self) -> *const u8 {
-        &self.data[0].r
-    }
 }
 
 impl<'a> From<&'a image::Image<u8>> for TexImage2D {
@@ -160,6 +153,19 @@ pub struct TextureAtlas2D<T> {
     uv_offsets: Vec<UVOffset>,
     pixel_offsets: Vec<PixelOffset>,
     data: Vec<T>,
+}
+
+impl<T> TextureAtlas2D<T> {
+    pub fn pixel_count(&self) -> usize {
+        self.data.len()
+    }
+}
+
+impl TextureAtlas2D<RGBA> {
+    #[inline]
+    pub fn as_ptr(&self) -> *const u8 {
+        &self.data[0].r
+    }
 }
 
 #[derive(Clone, Debug)]

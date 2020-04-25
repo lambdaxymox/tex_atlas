@@ -1,8 +1,8 @@
 use tex_atlas;
-use tex_atlas::{RGBA, TextureAtlas2D};
+use tex_atlas::{RGBA, Origin, PixelBoundingBox, PixelOffset, TextureAtlas2D};
 
 
-const SAMPLE_DATA: &str = "assets/sample.png";
+const SAMPLE_DATA: &str = "assets/sample.atlas";
 
 /// The integration test data expected from the sample image.
 /// NOTE: 
@@ -14,6 +14,7 @@ fn atlas() -> TextureAtlas2D<RGBA> {
     let width = 16;
     let height = 16;
     let depth = 4;
+    let origin = Origin::BottomLeft;
     let data: Vec<RGBA> = vec![
         0x0000FFFF, 0x0000FFFF, 0x0000FFFF, 0x0000FFFF, 0x0000FFFF, 0x0000FFFF, 0x0000FFFF, 0x0000FFFF, 0x000000FF, 0x000000FF, 0x000000FF, 0x000000FF, 0x000000FF, 0x000000FF, 0x000000FF, 0x000000FF,
         0x0000FFFF, 0x0000FFFF, 0x0000FFFF, 0x0000FFFF, 0x0000FFFF, 0x0000FFFF, 0x0000FFFF, 0x0000FFFF, 0x000000FF, 0x000000FF, 0x000000FF, 0x000000FF, 0x000000FF, 0x000000FF, 0x000000FF, 0x000000FF,
@@ -32,8 +33,11 @@ fn atlas() -> TextureAtlas2D<RGBA> {
         0xFF0000FF, 0xFF0000FF, 0xFF0000FF, 0xFF0000FF, 0xFF0000FF, 0xFF0000FF, 0xFF0000FF, 0xFF0000FF, 0x00FF00FF, 0x00FF00FF, 0x00FF00FF, 0x00FF00FF, 0x00FF00FF, 0x00FF00FF, 0x00FF00FF, 0x00FF00FF,
         0xFF0000FF, 0xFF0000FF, 0xFF0000FF, 0xFF0000FF, 0xFF0000FF, 0xFF0000FF, 0xFF0000FF, 0xFF0000FF, 0x00FF00FF, 0x00FF00FF, 0x00FF00FF, 0x00FF00FF, 0x00FF00FF, 0x00FF00FF, 0x00FF00FF, 0x00FF00FF,
     ].iter().map(|c| RGBA::from(*c)).collect();
-
-    TextureAtlas2D::from_rgba_data(width, height, data)
+    let names = vec![format!("sample")];
+    let top_left = PixelOffset { u: 0, v: 15 };
+    let pixel_offsets = vec![PixelBoundingBox { top_left: top_left, width: width, height: height }];
+    
+    TextureAtlas2D::from_rgba_data(width, height, origin, names, pixel_offsets, data)
 }
 
 /// The file loader yields the correct width.
@@ -61,7 +65,7 @@ fn test_load_file_yields_correct_pixel_count() {
     let result = tex_atlas::load_file(SAMPLE_DATA).unwrap().atlas;
     let expected = atlas();
 
-    assert_eq!(result.pixel_count(), expected.pixel_count());
+    assert_eq!(result.len(), expected.len());
 }
 
 /// The number of pixels in the image matches the width * height. That is, it satisfies
@@ -72,7 +76,7 @@ fn test_height_times_width_equals_pixel_count() {
     let atlas = tex_atlas::load_file(SAMPLE_DATA).unwrap().atlas;
     let height = atlas.height as usize;
     let width = atlas.width as usize;
-    let pixel_count = atlas.pixel_count();
+    let pixel_count = atlas.len();
 
     assert_eq!(width * height, pixel_count);
 }
@@ -82,19 +86,19 @@ fn test_height_times_width_equals_pixel_count() {
 fn test_load_file_yields_correct_data_block() {
     let result_atlas = tex_atlas::load_file(SAMPLE_DATA).unwrap().atlas;
     let expected_atlas = atlas();
-    let result = result_atlas.image();
-    let expected = expected_atlas.image();
+    let result = result_atlas.pixel_slice();
+    let expected = expected_atlas.pixel_slice();
 
     assert_eq!(result, expected);
 }
 
 /// The file loader yields the expected texture image.
 #[test]
-fn test_load_file_yields_correct_texture_image() {
+fn test_load_file_yields_correct_texture_atlas_data() {
     let result_atlas = tex_atlas::load_file(SAMPLE_DATA).unwrap().atlas;
     let expected_atlas = atlas();
-    let result = result_atlas.image();
-    let expected = expected_atlas.image();
+    let result = result_atlas.pixel_slice();
+    let expected = expected_atlas.pixel_slice();
 
     assert_eq!(result, expected);
 }

@@ -162,9 +162,9 @@ pub struct PixelOffset {
 
 #[derive(Copy, Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 pub struct PixelBoundingBox {
-    top_left: PixelOffset,
-    width: usize,
-    height: usize,
+    pub top_left: PixelOffset,
+    pub width: usize,
+    pub height: usize,
 }
 
 #[derive(Clone, Debug)]
@@ -176,6 +176,13 @@ struct TextureImage2D<T> {
 }
 
 impl<T> TextureImage2D<T> {
+    fn len(&self) -> usize {
+        self.data.len()
+    }
+}
+
+impl TextureImage2D<RGBA> {
+    #[inline]
     fn from_rgba_data(width: usize, height: usize, data: Vec<RGBA>) -> TextureImage2D<RGBA> {
         TextureImage2D {
             width: width,
@@ -185,12 +192,6 @@ impl<T> TextureImage2D<T> {
         }
     }
 
-    fn len(&self) -> usize {
-        self.data.len()
-    }
-}
-
-impl TextureImage2D<RGBA> {
     #[inline]
     pub fn as_ptr(&self) -> *const u8 {
         &self.data[0].r
@@ -228,6 +229,10 @@ impl<T> TextureAtlas2D<T> {
         self.data.len()
     }
 
+    pub fn pixel_slice(&self) -> &[T] {
+        &self.data.data
+    }
+
     fn image(&self) -> &TextureImage2D<T> {
         &self.data
     }
@@ -249,7 +254,10 @@ impl TextureAtlas2D<RGBA> {
         self.names.len()
     }
 
-    pub fn from_rgba_data(width: usize, height: usize, origin: Origin, data: Vec<RGBA>) -> TextureAtlas2D<RGBA> {
+    pub fn from_rgba_data(
+        width: usize, height: usize, origin: Origin, 
+        names: Vec<String>, pixel_offsets: Vec<PixelBoundingBox>, data: Vec<RGBA>) -> TextureAtlas2D<RGBA> {
+        
         let image_data = TextureImage2D::<RGBA>::from_rgba_data(width, height, data);
 
         TextureAtlas2D {
@@ -257,9 +265,9 @@ impl TextureAtlas2D<RGBA> {
             height: height,
             depth: 4,
             origin: origin, 
-            names: vec![],
+            names: names,
             uv_offsets: vec![],
-            pixel_offsets: vec![],
+            pixel_offsets: pixel_offsets,
             data: image_data,
         }
     }
@@ -429,7 +437,7 @@ pub fn to_writer<W: io::Write + io::Seek>(writer: W, atlas: &TextureAtlas2D<RGBA
 }
 
 /// Load a texture atlas directly from a file.
-pub fn load<P: AsRef<Path>>(path: P) -> Result<TextureAtlas2DResult<RGBA>, TextureAtlas2DError> {
+pub fn load_file<P: AsRef<Path>>(path: P) -> Result<TextureAtlas2DResult<RGBA>, TextureAtlas2DError> {
     let reader = File::open(&path).unwrap();
     from_reader(reader)
 }

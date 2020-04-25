@@ -141,13 +141,13 @@ pub enum TextureAtlas2DWarning {
     TextureDimensionsAreNotAPowerOfTwo,
 }
 
-#[derive(Copy, Clone, Debug, PartialEq)]
+#[derive(Copy, Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct UVOffset {
     pub u: f32,
     pub v: f32,
 }
 
-#[derive(Copy, Clone, Debug, PartialEq)]
+#[derive(Copy, Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct UVBoundingBox {
     top_left: UVOffset,
     width: f32,
@@ -288,7 +288,7 @@ impl<T> TextureAtlas2DResult<T> {
     }
 }
 
-fn load_image_from_reader<R: io::Read + io::Seek>(reader: R) -> Result<TextureImage2D<RGBA>, TextureAtlas2DError> {
+fn load_image_from_reader<R: io::Read>(reader: R) -> Result<TextureImage2D<RGBA>, TextureAtlas2DError> {
     let png_reader = png::PngDecoder::new(reader).map_err(|e| {
         let kind = ErrorKind::CouldNotLoadImageBuffer;
         TextureAtlas2DError::new(kind, Box::new(e))
@@ -341,23 +341,47 @@ fn load_image_from_file<P: AsRef<Path>>(file_path: P) -> Result<TextureImage2D<R
 
 
 pub fn from_reader<R: io::Read + io::Seek>(reader: R) -> Result<TextureAtlas2DResult<RGBA>, TextureAtlas2DError> {
-    unimplemented!()
-    /*
+    let mut zip_reader = zip::ZipArchive::new(reader).map_err(|e| {
+        let kind = ErrorKind::CouldNotLoadImageBuffer;
+        TextureAtlas2DError::new(kind, Box::new(e))
+    })?;
+    let coordinate_charts_file = zip_reader.by_name("coordinate_charts.json").map_err(|e| {
+        let kind = ErrorKind::CouldNotLoadImageBuffer;
+        TextureAtlas2DError::new(kind, Box::new(e))
+    })?;
+    let coordinate_charts: HashMap<String, PixelBoundingBox> = serde_json::from_reader(coordinate_charts_file).map_err(|e| {
+        let kind = ErrorKind::CouldNotLoadImageBuffer;
+        TextureAtlas2DError::new(kind, Box::new(e))
+    })?;
+    let image_file = zip_reader.by_name("atlas.png").map_err(|e| {
+        let kind = ErrorKind::CouldNotLoadImageBuffer;
+        TextureAtlas2DError::new(kind, Box::new(e))
+    })?;
+    let tex_image = load_image_from_reader(image_file)?;
+    
     // Check that the image size is a power of two.
+    let width = tex_image.width;
+    let height = tex_image.height;
     let warnings = if (width & (width - 1)) != 0 || (height & (height - 1)) != 0 {
         TextureAtlas2DWarning::TextureDimensionsAreNotAPowerOfTwo
     } else {
         TextureAtlas2DWarning::NoWarnings
     };
 
+    let names: Vec<String> = coordinate_charts.keys().map(|s| s.clone()).collect();
+    let mut pixel_offsets: Vec<PixelBoundingBox> = vec![];
+    for i in 0..names.len() {
+        pixel_offsets.push(coordinate_charts[&names[i]]);
+    }
+
     let atlas = TextureAtlas2D {
-        width: width,
-        height: height,
-        depth: depth,
+        width: tex_image.width,
+        height: tex_image.height,
+        depth: tex_image.depth,
         origin: Origin::BottomLeft,
-        names: vec![],
+        names: names,
         uv_offsets: vec![],
-        pixel_offsets: vec![],
+        pixel_offsets: pixel_offsets,
         data: tex_image,
     };
 
@@ -365,7 +389,6 @@ pub fn from_reader<R: io::Read + io::Seek>(reader: R) -> Result<TextureAtlas2DRe
         atlas: atlas,
         warnings: warnings,
     })
-    */
 }
 
 pub fn to_writer<W: io::Write + io::Seek>(writer: W, atlas: &TextureAtlas2D<RGBA>) -> io::Result<()> {
@@ -407,13 +430,7 @@ pub fn to_writer<W: io::Write + io::Seek>(writer: W, atlas: &TextureAtlas2D<RGBA
 
 /// Load a texture atlas directly from a file.
 pub fn load<P: AsRef<Path>>(path: P) -> Result<TextureAtlas2DResult<RGBA>, TextureAtlas2DError> {
-    /*
-    let reader = File::open(&path).map_err(|e| {
-        Error::new(ErrorKind::FileNotFound, Box::new(e))
-    })?;
-    */
     let reader = File::open(&path).unwrap();
-
     from_reader(reader)
 }
 

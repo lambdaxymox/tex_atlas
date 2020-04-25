@@ -1,10 +1,17 @@
 #![feature(vec_into_raw_parts)]
-use stb_image::image;
+use image::png;
+use stb_image::image as stbim;
 use stb_image::image::LoadResult;
+use serde_derive::{Deserialize, Serialize};
+
 use std::path::Path;
 use std::error::Error;
 use std::fmt;
 use std::mem;
+use std::io;
+use std::fs::File;
+
+
 
 
 #[derive(Copy, Clone, Debug, Eq, PartialEq)]
@@ -66,6 +73,22 @@ impl Error for TextureAtlas2DError {
     }
 }
 
+/// The `Origin` parameter determines which part of the underlying texture atlas image is considered
+/// the origin of the image. That is, when trying to render the texture atlas in a graphics application,
+/// this parameter tells the texture atlas parser how to format the atlas image for rendering.
+/// Geometrically, there are two equivalence classes of orientations each equivalent to one of the origin
+/// positions in two dimensions.
+#[derive(Copy, Clone, Debug, Eq, PartialEq, Serialize, Deserialize)]
+pub enum Origin {
+    /// The atlas image starts in the top left corner of the image, with the x-axis pointing right,
+    /// and the y-axis pointing down.
+    TopLeft,
+    /// The atlas image starts in the bottom right corner of the image, with the x-axis pointing right,
+    /// and the y-axis pointing up.
+    BottomLeft,
+}
+
+
 #[derive(Copy, Clone, Debug, PartialEq, Eq)]
 pub enum TextureAtlas2DWarning {
     NoWarnings,
@@ -103,6 +126,7 @@ pub struct TextureAtlas2D<T> {
     pub width: usize,
     pub height: usize,
     pub depth: usize,
+    origin: Origin,
     names: Vec<String>,
     uv_offsets: Vec<UVOffset>,
     pixel_offsets: Vec<PixelOffset>,
@@ -121,11 +145,12 @@ impl TextureAtlas2D<RGBA> {
         &self.data[0].r
     }
 
-    pub fn from_rgba_data(width: usize, height: usize, data: Vec<RGBA>) -> TextureAtlas2D<RGBA> {
+    pub fn from_rgba_data(width: usize, height: usize, origin: Origin, data: Vec<RGBA>) -> TextureAtlas2D<RGBA> {
         TextureAtlas2D {
             width: width,
             height: height,
             depth: 4,
+            origin: origin, 
             names: vec![],
             uv_offsets: vec![],
             pixel_offsets: vec![],
@@ -153,7 +178,7 @@ impl TextureAtlas2DResult {
 /// Load a PNG texture image from a reader or buffer.
 pub fn load_from_memory(buffer: &[u8]) -> Result<TextureAtlas2DResult, TextureAtlas2DError> {
     let force_channels = 4;
-    let mut image_data = match image::load_from_memory_with_depth(buffer, force_channels, false) {
+    let mut image_data = match stbim::load_from_memory_with_depth(buffer, force_channels, false) {
         LoadResult::ImageU8(image_data) => image_data,
         LoadResult::Error(_) => {
             return Err(TextureAtlas2DError::CouldNotLoadImageBuffer);
@@ -195,6 +220,7 @@ pub fn load_from_memory(buffer: &[u8]) -> Result<TextureAtlas2DResult, TextureAt
         width: width,
         height: height,
         depth: depth,
+        origin: Origin::BottomLeft,
         names: vec![],
         uv_offsets: vec![],
         pixel_offsets: vec![],
@@ -210,7 +236,7 @@ pub fn load_from_memory(buffer: &[u8]) -> Result<TextureAtlas2DResult, TextureAt
 /// Load a PNG texture image from a file name.
 pub fn load_file<P: AsRef<Path>>(file_path: P) -> Result<TextureAtlas2DResult, TextureAtlas2DError> {
     let force_channels = 4;
-    let mut image_data = match image::load_with_depth(&file_path, force_channels, false) {
+    let mut image_data = match stbim::load_with_depth(&file_path, force_channels, false) {
         LoadResult::ImageU8(image_data) => image_data,
         LoadResult::Error(_) => {
             return Err(TextureAtlas2DError::CouldNotLoadImageBuffer);
@@ -252,6 +278,7 @@ pub fn load_file<P: AsRef<Path>>(file_path: P) -> Result<TextureAtlas2DResult, T
         width: width,
         height: height,
         depth: depth,
+        origin: Origin::BottomLeft,
         names: vec![],
         uv_offsets: vec![],
         pixel_offsets: vec![],
@@ -264,6 +291,61 @@ pub fn load_file<P: AsRef<Path>>(file_path: P) -> Result<TextureAtlas2DResult, T
     })
 }
 
+
+pub fn from_reader<R: io::Read + io::Seek>(reader: R) -> Result<TextureAtlas2DResult, TextureAtlas2DError> {
+    unimplemented!()
+}
+
+pub fn to_writer<W: io::Write + io::Seek>(writer: W, atlas: &TextureAtlas2D<RGBA>) -> io::Result<()> {
+    unimplemented!()
+    /*
+    let mut zip_file = zip::ZipWriter::new(writer);
+    let options =
+        zip::write::FileOptions::default().compression_method(zip::CompressionMethod::Stored);
+
+    // Write out the metadata.
+    zip_file.start_file("coordinate_chart.json", options)?;
+    serde_json::to_writer_pretty(&mut zip_file, &atlas.metadata())?;
+
+    // if the origin is the bottom left of the image, we need to flip the image back over
+    // before writing it out.
+    let mut image = atlas.image().clone();
+    if atlas.origin == Origin::BottomLeft {
+        let height = atlas.height;
+        let width_in_bytes = 4 * atlas.width;
+        let half_height = atlas.height / 2;
+        for row in 0..half_height {
+            for col in 0..width_in_bytes {
+                let temp = image[row * width_in_bytes + col];
+                image[row * width_in_bytes + col] = image[((height - row - 1) * width_in_bytes) + col];
+                image[((height - row - 1) * width_in_bytes) + col] = temp;
+            }
+        }
+    }
+
+    // Write out the atlas image.
+    zip_file.start_file("atlas.png", options)?;
+    let png_encoder = png::Encoder::new(&mut zip_file, atlas.width as u32, atlas.height as u32);
+    png_encoder.set_color(png::ColorType::RGBA);
+    png_encoder.set_depth(png::BitDepth::Eight);
+    let mut png_writer = png_encoder.write_header()?;
+    png_writer.write_image_data(image.as_ptr())?;
+
+    zip_file.finish()?;
+
+    Ok(())
+    */
+}
+
+pub fn write_to_file<P: AsRef<Path>>(path: P, atlas: &TextureAtlas2D<RGBA>) -> io::Result<()> {
+    // Set up the image zip archive.
+    let mut file_path = path.as_ref().to_path_buf();
+    file_path.set_extension("atlas");
+    let file = File::create(&file_path)?;
+
+    // Write out the atlas contents.
+    to_writer(file, atlas)
+}
 
 
 #[cfg(test)]

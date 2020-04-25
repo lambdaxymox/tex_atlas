@@ -1,5 +1,6 @@
 #![feature(vec_into_raw_parts)]
 use image::png;
+use image::{ColorType, ImageDecoder};
 use stb_image::image as stbim;
 use stb_image::image::LoadResult;
 use serde_derive::{Deserialize, Serialize};
@@ -10,7 +11,8 @@ use std::fmt;
 use std::mem;
 use std::io;
 use std::fs::File;
-
+use std::slice;
+use std::collections::hash_map::HashMap;
 
 
 
@@ -108,17 +110,61 @@ pub struct UVBoundingBox {
     height: f32,
 }
 
-#[derive(Copy, Clone, Debug, PartialEq, Eq)]
+#[derive(Copy, Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 pub struct PixelOffset {
     pub u: usize,
     pub v: usize,
 }
 
-#[derive(Copy, Clone, Debug, PartialEq, Eq)]
+#[derive(Copy, Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 pub struct PixelBoundingBox {
     top_left: PixelOffset,
     width: usize,
     height: usize,
+}
+
+#[derive(Clone, Debug)]
+struct TextureImage2D<T> {
+    width: usize,
+    height: usize,
+    depth: usize,
+    data: Vec<T>,
+}
+
+impl<T> TextureImage2D<T> {
+    fn from_rgba_data(width: usize, height: usize, data: Vec<RGBA>) -> TextureImage2D<RGBA> {
+        TextureImage2D {
+            width: width,
+            height: height,
+            depth: 4,
+            data: data,
+        }
+    }
+
+    fn len(&self) -> usize {
+        self.data.len()
+    }
+}
+
+impl TextureImage2D<RGBA> {
+    #[inline]
+    pub fn as_ptr(&self) -> *const u8 {
+        &self.data[0].r
+    }
+
+    fn as_bytes(&self) -> &[u8] {
+        let ptr: *const u8 = &self.data[0].r;
+        let len_bytes = self.width * self.height * self.depth;
+        let bytes = unsafe { 
+            slice::from_raw_parts(ptr, len_bytes)
+        };
+
+        bytes
+    }
+    
+    fn len_bytes(&self) -> usize {
+        mem::size_of::<RGBA>() * self.data.len()
+    }
 }
 
 #[derive(Clone, Debug)]
@@ -128,24 +174,40 @@ pub struct TextureAtlas2D<T> {
     pub depth: usize,
     origin: Origin,
     names: Vec<String>,
-    uv_offsets: Vec<UVOffset>,
-    pixel_offsets: Vec<PixelOffset>,
-    data: Vec<T>,
+    uv_offsets: Vec<UVBoundingBox>,
+    pixel_offsets: Vec<PixelBoundingBox>,
+    data: TextureImage2D<T>,
 }
 
 impl<T> TextureAtlas2D<T> {
-    pub fn pixel_count(&self) -> usize {
+    pub fn len(&self) -> usize {
         self.data.len()
+    }
+
+    fn image(&self) -> &TextureImage2D<T> {
+        &self.data
     }
 }
 
 impl TextureAtlas2D<RGBA> {
     #[inline]
     pub fn as_ptr(&self) -> *const u8 {
-        &self.data[0].r
+        self.data.as_ptr()
+    }
+
+    #[inline]
+    pub fn as_bytes(&self) -> &[u8] {
+        self.data.as_bytes()
+    }
+
+    #[inline]
+    pub fn texture_count(&self) -> usize {
+        self.names.len()
     }
 
     pub fn from_rgba_data(width: usize, height: usize, origin: Origin, data: Vec<RGBA>) -> TextureAtlas2D<RGBA> {
+        let image_data = TextureImage2D::<RGBA>::from_rgba_data(width, height, data);
+
         TextureAtlas2D {
             width: width,
             height: height,
@@ -154,29 +216,36 @@ impl TextureAtlas2D<RGBA> {
             names: vec![],
             uv_offsets: vec![],
             pixel_offsets: vec![],
-            data: data,
+            data: image_data,
         }
     }
 
-    pub fn image(&self) -> &[RGBA] {
-        &self.data
+    pub fn coordinate_charts(&self) -> HashMap<&str, PixelBoundingBox> {
+        let mut charts = HashMap::new();
+        for i in 0..self.texture_count() {
+            let name = self.names[i].as_str();
+            let bounding_box = self.pixel_offsets[i];
+            charts.insert(name, bounding_box);
+        }
+
+        charts
     }
 }
 
 #[derive(Clone, Debug)]
-pub struct TextureAtlas2DResult {
-    pub atlas: TextureAtlas2D<RGBA>,
+pub struct TextureAtlas2DResult<T> {
+    pub atlas: TextureAtlas2D<T>,
     pub warnings: TextureAtlas2DWarning,
 }
 
-impl TextureAtlas2DResult {
+impl<T> TextureAtlas2DResult<T> {
     pub fn has_no_warnings(&self) -> bool {
         self.warnings == TextureAtlas2DWarning::NoWarnings
     }
 }
 
 /// Load a PNG texture image from a reader or buffer.
-pub fn load_from_memory(buffer: &[u8]) -> Result<TextureAtlas2DResult, TextureAtlas2DError> {
+pub fn load_from_memory(buffer: &[u8]) -> Result<TextureAtlas2DResult<RGBA>, TextureAtlas2DError> {
     let force_channels = 4;
     let mut image_data = match stbim::load_from_memory_with_depth(buffer, force_channels, false) {
         LoadResult::ImageU8(image_data) => image_data,
@@ -216,6 +285,7 @@ pub fn load_from_memory(buffer: &[u8]) -> Result<TextureAtlas2DResult, TextureAt
         let capacity = old_capacity / 4;
         Vec::from_raw_parts(ptr, length, capacity)
     };
+    let tex_image = TextureImage2D::<RGBA>::from_rgba_data(width, height, tex_image_data);
     let atlas = TextureAtlas2D {
         width: width,
         height: height,
@@ -224,7 +294,7 @@ pub fn load_from_memory(buffer: &[u8]) -> Result<TextureAtlas2DResult, TextureAt
         names: vec![],
         uv_offsets: vec![],
         pixel_offsets: vec![],
-        data: tex_image_data,
+        data: tex_image,
     };
 
     Ok(TextureAtlas2DResult {
@@ -234,7 +304,7 @@ pub fn load_from_memory(buffer: &[u8]) -> Result<TextureAtlas2DResult, TextureAt
 }
 
 /// Load a PNG texture image from a file name.
-pub fn load_file<P: AsRef<Path>>(file_path: P) -> Result<TextureAtlas2DResult, TextureAtlas2DError> {
+pub fn load_file<P: AsRef<Path>>(file_path: P) -> Result<TextureAtlas2DResult<RGBA>, TextureAtlas2DError> {
     let force_channels = 4;
     let mut image_data = match stbim::load_with_depth(&file_path, force_channels, false) {
         LoadResult::ImageU8(image_data) => image_data,
@@ -266,7 +336,6 @@ pub fn load_file<P: AsRef<Path>>(file_path: P) -> Result<TextureAtlas2DResult, T
             image_data.data[((height - row - 1) * width_in_bytes) + col] = temp;
         }
     }
-
     let tex_image_data = unsafe { 
         let (old_ptr, old_length, old_capacity) = image_data.data.into_raw_parts();
         let ptr = mem::transmute::<*mut u8, *mut RGBA>(old_ptr);
@@ -274,6 +343,7 @@ pub fn load_file<P: AsRef<Path>>(file_path: P) -> Result<TextureAtlas2DResult, T
         let capacity = old_capacity / 4;
         Vec::from_raw_parts(ptr, length, capacity)
     };
+    let tex_image = TextureImage2D::<RGBA>::from_rgba_data(width, height, tex_image_data);
     let atlas = TextureAtlas2D {
         width: width,
         height: height,
@@ -282,7 +352,7 @@ pub fn load_file<P: AsRef<Path>>(file_path: P) -> Result<TextureAtlas2DResult, T
         names: vec![],
         uv_offsets: vec![],
         pixel_offsets: vec![],
-        data: tex_image_data,
+        data: tex_image,
     };
 
     Ok(TextureAtlas2DResult {
@@ -292,20 +362,18 @@ pub fn load_file<P: AsRef<Path>>(file_path: P) -> Result<TextureAtlas2DResult, T
 }
 
 
-pub fn from_reader<R: io::Read + io::Seek>(reader: R) -> Result<TextureAtlas2DResult, TextureAtlas2DError> {
+pub fn from_reader<R: io::Read + io::Seek>(reader: R) -> Result<TextureAtlas2DResult<RGBA>, TextureAtlas2DError> {
     unimplemented!()
 }
 
 pub fn to_writer<W: io::Write + io::Seek>(writer: W, atlas: &TextureAtlas2D<RGBA>) -> io::Result<()> {
-    unimplemented!()
-    /*
     let mut zip_file = zip::ZipWriter::new(writer);
     let options =
         zip::write::FileOptions::default().compression_method(zip::CompressionMethod::Stored);
 
     // Write out the metadata.
     zip_file.start_file("coordinate_chart.json", options)?;
-    serde_json::to_writer_pretty(&mut zip_file, &atlas.metadata())?;
+    serde_json::to_writer_pretty(&mut zip_file, &atlas.coordinate_charts())?;
 
     // if the origin is the bottom left of the image, we need to flip the image back over
     // before writing it out.
@@ -316,25 +384,23 @@ pub fn to_writer<W: io::Write + io::Seek>(writer: W, atlas: &TextureAtlas2D<RGBA
         let half_height = atlas.height / 2;
         for row in 0..half_height {
             for col in 0..width_in_bytes {
-                let temp = image[row * width_in_bytes + col];
-                image[row * width_in_bytes + col] = image[((height - row - 1) * width_in_bytes) + col];
-                image[((height - row - 1) * width_in_bytes) + col] = temp;
+                let temp = image.data[row * width_in_bytes + col];
+                image.data[row * width_in_bytes + col] = image.data[((height - row - 1) * width_in_bytes) + col];
+                image.data[((height - row - 1) * width_in_bytes) + col] = temp;
             }
         }
     }
 
     // Write out the atlas image.
     zip_file.start_file("atlas.png", options)?;
-    let png_encoder = png::Encoder::new(&mut zip_file, atlas.width as u32, atlas.height as u32);
-    png_encoder.set_color(png::ColorType::RGBA);
-    png_encoder.set_depth(png::BitDepth::Eight);
-    let mut png_writer = png_encoder.write_header()?;
-    png_writer.write_image_data(image.as_ptr())?;
+    let png_writer = png::PNGEncoder::new(&mut zip_file);
+    png_writer.encode(
+        image.as_bytes(), atlas.width as u32, atlas.height as u32, ColorType::Rgba8
+    ).map_err(|e| io::Error::new(io::ErrorKind::Other, Box::new(e)))?;
 
     zip_file.finish()?;
 
     Ok(())
-    */
 }
 
 pub fn write_to_file<P: AsRef<Path>>(path: P, atlas: &TextureAtlas2D<RGBA>) -> io::Result<()> {

@@ -179,7 +179,8 @@ pub struct PixelBoundingBox {
 struct TextureImage2D<T> {
     width: usize,
     height: usize,
-    depth: usize,
+    channel_count: usize,
+    bytes_per_pixel: usize,
     data: Vec<T>,
 }
 
@@ -195,7 +196,8 @@ impl TextureImage2D<RGBA> {
         TextureImage2D {
             width: width,
             height: height,
-            depth: 4,
+            channel_count: 4,
+            bytes_per_pixel: 4,
             data: data,
         }
     }
@@ -207,7 +209,7 @@ impl TextureImage2D<RGBA> {
 
     fn as_bytes(&self) -> &[u8] {
         let ptr: *const u8 = &self.data[0].r;
-        let len_bytes = self.width * self.height * self.depth;
+        let len_bytes = self.width * self.height * self.bytes_per_pixel;
         let bytes = unsafe { 
             slice::from_raw_parts(ptr, len_bytes)
         };
@@ -224,7 +226,8 @@ impl TextureImage2D<RGBA> {
 pub struct TextureAtlas2D<T> {
     pub width: usize,
     pub height: usize,
-    pub depth: usize,
+    pub channel_count: usize,
+    pub bytes_per_pixel: usize,
     origin: Origin,
     names: Vec<String>,
     uv_offsets: Vec<UVBoundingBox>,
@@ -233,12 +236,19 @@ pub struct TextureAtlas2D<T> {
 }
 
 impl<T> TextureAtlas2D<T> {
+    #[inline]
     pub fn len(&self) -> usize {
         self.data.len()
     }
 
+    #[inline]
     pub fn pixel_slice(&self) -> &[T] {
         &self.data.data
+    }
+
+    #[inline]
+    pub fn depth(& self) -> usize {
+        self.channel_count * self.bytes_per_pixel
     }
 
     fn image(&self) -> &TextureImage2D<T> {
@@ -271,7 +281,8 @@ impl TextureAtlas2D<RGBA> {
         TextureAtlas2D {
             width: width,
             height: height,
-            depth: 4,
+            channel_count: image_data.channel_count,
+            bytes_per_pixel: image_data.bytes_per_pixel,
             origin: origin, 
             names: names,
             uv_offsets: vec![],
@@ -400,7 +411,8 @@ pub fn from_reader<R: io::Read + io::Seek>(reader: R) -> Result<TextureAtlas2DRe
     let atlas = TextureAtlas2D {
         width: tex_image.width,
         height: tex_image.height,
-        depth: tex_image.depth,
+        channel_count: tex_image.channel_count,
+        bytes_per_pixel: tex_image.bytes_per_pixel,
         origin: Origin::BottomLeft,
         names: names,
         uv_offsets: vec![],

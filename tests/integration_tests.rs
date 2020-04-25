@@ -64,7 +64,7 @@ fn load_file_yields_correct_pixel_channel_count() {
     let result = tex_atlas::load_file(SAMPLE_DATA).unwrap().atlas;
     let expected = atlas();
 
-    assert_eq!(result.depth, expected.depth);
+    assert_eq!(result.channel_count, expected.channel_count);
 }
 
 /// The number of pixels in the loaded image matches the number

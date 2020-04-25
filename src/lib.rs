@@ -134,10 +134,15 @@ pub enum Origin {
     BottomLeft,
 }
 
-
+/// Possible warnings generated when parsing a texture image atlas. These include things that are not strictly 
+/// errors, but could degrade the performance of the texture atlas in graphics applications. The default case is
+/// that no warnings occurred.
 #[derive(Copy, Clone, Debug, PartialEq, Eq)]
 pub enum TextureAtlas2DWarning {
+    /// No warnings occurred.
     NoWarnings,
+    /// The texture image dimensins are not a power of two. Texture image dimensions that
+    /// are a power of two are easier to index into for graphics hardware.
     TextureDimensionsAreNotAPowerOfTwo,
 }
 

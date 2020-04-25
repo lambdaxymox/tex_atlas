@@ -289,9 +289,14 @@ impl TextureAtlas2D<RGBA> {
     }
 }
 
+/// This type bundles together a texture atlas and any possible warnings generated
+/// from encoding or decoding a texture atlas. Warnings are properties that are not
+/// errors but can degrade the performance of working with the texture atlas.
 #[derive(Clone, Debug)]
 pub struct TextureAtlas2DResult<T> {
+    /// The texture atlas we decoded.
     pub atlas: TextureAtlas2D<T>,
+    /// Any warnings generated in the decoding process.
     pub warnings: TextureAtlas2DWarning,
 }
 
@@ -301,6 +306,7 @@ impl<T> TextureAtlas2DResult<T> {
     }
 }
 
+/// Load an atlas image file from a reader.
 fn load_image_from_reader<R: io::Read>(reader: R) -> Result<TextureImage2D<RGBA>, TextureAtlas2DError> {
     let png_reader = png::PngDecoder::new(reader).map_err(|e| {
         let kind = ErrorKind::CouldNotLoadImageBuffer;
@@ -352,7 +358,8 @@ fn load_image_from_file<P: AsRef<Path>>(file_path: P) -> Result<TextureImage2D<R
     load_image_from_reader(reader)
 }
 
-
+/// Load a texture atlas from any endpoint that can be read from. This include files
+/// and buffers in memory.
 pub fn from_reader<R: io::Read + io::Seek>(reader: R) -> Result<TextureAtlas2DResult<RGBA>, TextureAtlas2DError> {
     let mut zip_reader = zip::ZipArchive::new(reader).map_err(|e| {
         let kind = ErrorKind::CouldNotLoadImageBuffer;
@@ -404,6 +411,8 @@ pub fn from_reader<R: io::Read + io::Seek>(reader: R) -> Result<TextureAtlas2DRe
     })
 }
 
+/// Write a texture atlas out to any writable endpoint. This includes files
+/// and buffers in memory.
 pub fn to_writer<W: io::Write + io::Seek>(writer: W, atlas: &TextureAtlas2D<RGBA>) -> io::Result<()> {
     let mut zip_file = zip::ZipWriter::new(writer);
     let options =
@@ -447,6 +456,7 @@ pub fn load_file<P: AsRef<Path>>(path: P) -> Result<TextureAtlas2DResult<RGBA>, 
     from_reader(reader)
 }
 
+/// Write a texture atlas direct to a file.
 pub fn write_to_file<P: AsRef<Path>>(path: P, atlas: &TextureAtlas2D<RGBA>) -> io::Result<()> {
     // Set up the image zip archive.
     let mut file_path = path.as_ref().to_path_buf();

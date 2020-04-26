@@ -271,7 +271,7 @@ impl TextureImage2D {
     }
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Serialize, Deserialize)]
 struct AtlasEntry {
     name: String,
     bounding_box_tex: BoundingBoxTexCoords,
@@ -380,18 +380,17 @@ impl TextureAtlas2D {
 
     /// Get the collection of all bounding boxes for the textures inside the 
     /// texture atlas.
-    /*
-    pub fn coordinate_charts(&self) -> HashMap<&str, AtlasEntry> {
+    pub fn coordinate_charts(&self) -> HashMap<&str, BoundingBoxPixelCoords> {
         let mut charts = HashMap::new();
-        for i in 0..self.texture_count() {
-            let name = self.names[i].as_str();
-            let bounding_box = self.pixel_offsets[i];
-            charts.insert(name, bounding_box);
+        for name in self.names.keys() {
+            let name_str = name.as_str();
+            let index = self.names[name_str];
+            let bounding_box = self.bounding_boxes[index].bounding_box_pix;
+            charts.insert(name_str, bounding_box);
         }
 
         charts
     }
-    */
 
     /// Get the set of all texture names for the textures inside the 
     /// texture atlas.
@@ -554,7 +553,8 @@ pub fn to_writer<W: io::Write + io::Seek>(writer: W, atlas: &TextureAtlas2D) -> 
 
     // Write out the coordinate charts.
     zip_file.start_file("coordinate_charts.json", options)?;
-    //serde_json::to_writer_pretty(&mut zip_file, &atlas.coordinate_charts())?;
+    serde_json::to_writer_pretty(&mut zip_file, &atlas.origin);
+    serde_json::to_writer_pretty(&mut zip_file, &atlas.coordinate_charts())?;
 
     // if the origin is the bottom left of the image, we need to flip the image back over
     // before writing it out. PNG images index starting from the top left corner of

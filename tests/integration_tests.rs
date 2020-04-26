@@ -1,5 +1,5 @@
 use tex_atlas;
-use tex_atlas::{ColorType, Origin, PixelBoundingBox, PixelOffset, TextureAtlas2D};
+use tex_atlas::{ColorType, Origin, BoundingBoxPixelCoords, OffsetPixelCoords, TextureAtlas2D};
 
 
 const SAMPLE_DATA: &str = "assets/sample.atlas";
@@ -51,8 +51,8 @@ fn atlas() -> TextureAtlas2D {
         0xFF0000FF, 0xFF0000FF, 0xFF0000FF, 0xFF0000FF, 0xFF0000FF, 0xFF0000FF, 0xFF0000FF, 0xFF0000FF, 0x00FF00FF, 0x00FF00FF, 0x00FF00FF, 0x00FF00FF, 0x00FF00FF, 0x00FF00FF, 0x00FF00FF, 0x00FF00FF,
     ]);
     let names = vec![format!("sample")];
-    let top_left = PixelOffset { u: 0, v: 15 };
-    let pixel_offsets = vec![PixelBoundingBox { top_left: top_left, width: width, height: height }];
+    let top_left = OffsetPixelCoords { u: 0, v: 15 };
+    let pixel_offsets = vec![BoundingBoxPixelCoords { top_left: top_left, width: width, height: height }];
     
     TextureAtlas2D::new(width, height, color_type, origin, names, pixel_offsets, data)
 }

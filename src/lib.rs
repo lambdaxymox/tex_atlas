@@ -395,11 +395,9 @@ impl TextureAtlas2D {
 
     /// Get the set of all texture names for the textures inside the 
     /// texture atlas.
-    /*
     pub fn names(&self) -> Vec<&str> {
-        self.names.iter().map(|s| s.as_str()).collect()
+        self.names.keys().map(|s| s.as_str()).collect()
     }
-    */
 
     pub fn get_name(&self, name: &str) -> Option<BoundingBoxPixelCoords> {
         None

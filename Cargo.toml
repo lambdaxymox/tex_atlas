@@ -1,9 +1,10 @@
 [package]
 name = "tex_atlas"
-version = "0.1.6"
+version = "0.1.7"
 authors = ["LambdaXymox <lambda.xymox@gmail.com>"]
 edition = "2018"
 description = "A crate for packing multiple textures into a single texture atlas for efficient manipulation by graphics hardware."
+keywords = ["data structures", "computer graphics", "game development"]
 
 
 [dependencies]

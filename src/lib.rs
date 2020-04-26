@@ -237,7 +237,19 @@ impl TextureAtlas2D {
         names: Vec<String>, pixel_offsets: Vec<PixelBoundingBox>, data: Vec<u8>) -> TextureAtlas2D {
         
         let image_data = TextureImage2D::new(width, height, color_type, data);
-
+        let mut uv_offsets = vec![];
+        for i in 0..pixel_offsets.len() {
+            let bounding_box = pixel_offsets[i];
+            let top_left = bounding_box.top_left;
+            let u = top_left.u as f32 / width as f32;
+            let v = top_left.v as f32 / height as f32;
+            let uv_offset = UVOffset { u: u, v: v  };
+            let uv_width = bounding_box.width as f32 / width as f32;
+            let uv_height = bounding_box.height as f32 / height as f32;
+            let uv_bounding_box = UVBoundingBox { top_left: uv_offset, width: uv_width, height: uv_height };
+            uv_offsets.push(uv_bounding_box);
+        }
+        assert_eq!(pixel_offsets.len(), uv_offsets.len());
         TextureAtlas2D {
             width: width,
             height: height,
@@ -246,7 +258,7 @@ impl TextureAtlas2D {
             color_type: color_type,
             origin: origin,
             names: names,
-            uv_offsets: vec![],
+            uv_offsets: uv_offsets,
             pixel_offsets: pixel_offsets,
             data: image_data,
         }
@@ -304,24 +316,24 @@ impl TextureAtlas2D {
         self.names.iter().map(|s| s.as_str()).collect()
     }
 
-    pub fn get_by_name(&self, name: &str) -> Option<PixelBoundingBox> {
+    pub fn get_name(&self, name: &str) -> Option<PixelBoundingBox> {
         None
     }
 
-    pub fn get_by_name_uv(&self, name: &str) -> Option<UVBoundingBox> {
+    pub fn get_name_uv(&self, name: &str) -> Option<UVBoundingBox> {
         None
     }
 
-    pub fn get_by_index(&self, index: usize) -> Option<PixelBoundingBox> {
-        if index > self.pixel_offsets.len() {
+    pub fn get_index(&self, index: usize) -> Option<PixelBoundingBox> {
+        if index < self.pixel_offsets.len() {
             Some(self.pixel_offsets[index])
         } else {
             None
         }
     }
 
-    pub fn get_by_index_uv(&self, index: usize) -> Option<UVBoundingBox> {
-        if index > self.pixel_offsets.len() {
+    pub fn get_index_uv(&self, index: usize) -> Option<UVBoundingBox> {
+        if index < self.uv_offsets.len() {
             Some(self.uv_offsets[index])
         } else {
             None

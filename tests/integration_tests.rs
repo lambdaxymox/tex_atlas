@@ -156,17 +156,25 @@ fn each_texture_in_the_atlas_exists() {
     let atlas = tex_atlas::load_file(SAMPLE_DATA).unwrap().atlas;
     let names = atlas.names();
     for name in names.iter() {
-        assert!(atlas.get_by_name(name).is_some(), "{}", name);
+        assert!(atlas.get_name(name).is_some(), "{}", name);
+    }
+}
+
+/// Every texture has a corresponding bounding box.
+#[test]
+fn every_texture_corresponding_bounding_box() {
+    let atlas = tex_atlas::load_file(SAMPLE_DATA).unwrap().atlas;
+    for i in 0..atlas.texture_count() {
+        assert!(atlas.get_index(i).is_some());
     }
 }
 
 /// Every bounding box in units of pixels should have a corresponding
-/// box in the unit square in texture coordinates.
+/// bounding box in the unit square in texture coordinates.
 #[test]
 fn every_pixel_bounding_box_has_a_corresponding_uv_bounding_box() {
     let atlas = tex_atlas::load_file(SAMPLE_DATA).unwrap().atlas;
     for i in 0..atlas.texture_count() {
-        assert!(atlas.get_by_index(i).is_some());
-        assert!(atlas.get_by_index_uv(i).is_some());
+        assert!(atlas.get_index_uv(i).is_some());
     }
 }

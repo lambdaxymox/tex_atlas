@@ -140,30 +140,47 @@ pub enum TextureAtlas2DWarning {
     TextureDimensionsAreNotAPowerOfTwo,
 }
 
-
+/// The position of the top left corner of the bounding box in texture coordinates
+/// of the unit square [0,1] x [0,1].
 #[derive(Copy, Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct UVOffset {
+    /// The horizontal coordinate.
     pub u: f32,
+    /// The vertical coordinate.
     pub v: f32,
 }
 
+/// The parameters describing the position and dimensions of the bounding box
+/// in texture corrdinates in the unit square [0,1] x [0,1].  
 #[derive(Copy, Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct UVBoundingBox {
+    /// The position of the top left corner of the bounding box.
     top_left: UVOffset,
+    /// The width of the bounding box.
     width: f32,
+    // The height of the bounding box.
     height: f32,
 }
 
+/// The position of the top left corner of the bounding box in
+/// terms of the raw pixel position in the underlying image array.
 #[derive(Copy, Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 pub struct PixelOffset {
+    /// The horizontal coordinate.
     pub u: usize,
+    /// The vertical coordinate.
     pub v: usize,
 }
 
+/// The parameter that describe the position and dimensions of the bounding box
+/// in terms of the location inside the underlying storage of the pixels.
 #[derive(Copy, Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 pub struct PixelBoundingBox {
+    /// The position of the top left corner of the bounding box.
     pub top_left: PixelOffset,
+    /// The width in pixels of the bounding box.
     pub width: usize,
+    /// The height in pixels of the bounding box.
     pub height: usize,
 }
 

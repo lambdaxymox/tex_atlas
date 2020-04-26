@@ -107,6 +107,19 @@ fn height_times_width_equals_pixel_count() {
     assert_eq!(width * height, pixel_count);
 }
 
+/// The number of bytes in the image matches the width * height * bytes per pixel. That is, it satisfies
+/// 
+/// `number of bytes == width * height * bytes per pixel.`
+#[test]
+fn height_times_width_equals_length_in_bytes() {
+    let atlas = tex_atlas::load_file(SAMPLE_DATA).unwrap().atlas;
+    let height = atlas.height;
+    let width = atlas.width;
+    let bytes_per_pixel = atlas.bytes_per_pixel;
+
+    assert_eq!(width * height * bytes_per_pixel, atlas.len_bytes());
+}
+
 /// The file loader yields the correct data block.
 #[test]
 fn load_file_yields_correct_data_block() {

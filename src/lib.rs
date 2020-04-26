@@ -292,6 +292,11 @@ impl TextureAtlas2D {
         self.data.len_pixels()
     }
 
+    #[inline]
+    pub fn len_bytes(&self) -> usize {
+        self.data.len_bytes()
+    }
+
     fn image(&self) -> &TextureImage2D {
         &self.data
     }

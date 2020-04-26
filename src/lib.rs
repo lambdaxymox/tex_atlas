@@ -1,4 +1,3 @@
-#![feature(vec_into_raw_parts)]
 use image::png;
 use image::{ImageDecoder};
 use serde_derive::{Deserialize, Serialize};
@@ -12,7 +11,7 @@ use std::collections::hash_map::HashMap;
 use std::error;
 
 
-
+/// The color space represented by the underlying image data.
 #[derive(Copy, Clone, Debug, Eq, PartialEq)]
 pub enum ColorType {
     Rgba8,

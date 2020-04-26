@@ -291,6 +291,21 @@ impl AtlasEntry {
     }
 }
 
+#[derive(Serialize, Deserialize)]
+struct TextureAtlas2DSerialization {
+    origin: Origin,
+    coordinate_charts: HashMap<String, BoundingBoxPixelCoords>,
+}
+
+impl TextureAtlas2DSerialization {
+    fn new(origin: Origin, coordinate_charts: HashMap<String, BoundingBoxPixelCoords>) -> TextureAtlas2DSerialization {
+        TextureAtlas2DSerialization {
+            origin: origin,
+            coordinate_charts: coordinate_charts,
+        }
+    }
+}
+
 #[derive(Clone, Debug)]
 pub struct TextureAtlas2D {
     pub width: usize,
@@ -380,16 +395,16 @@ impl TextureAtlas2D {
 
     /// Get the collection of all bounding boxes for the textures inside the 
     /// texture atlas.
-    pub fn coordinate_charts(&self) -> HashMap<&str, BoundingBoxPixelCoords> {
-        let mut charts = HashMap::new();
+    fn coordinate_charts(&self) -> TextureAtlas2DSerialization {
+        let mut coordinate_charts = HashMap::new();
         for name in self.names.keys() {
-            let name_str = name.as_str();
-            let index = self.names[name_str];
+            let name_str = name.clone();
+            let index = self.names[name.as_str()];
             let bounding_box = self.bounding_boxes[index].bounding_box_pix;
-            charts.insert(name_str, bounding_box);
+            coordinate_charts.insert(name_str, bounding_box);
         }
 
-        charts
+        TextureAtlas2DSerialization::new(self.origin, coordinate_charts)
     }
 
     /// Get the set of all texture names for the textures inside the 
@@ -509,7 +524,7 @@ pub fn from_reader<R: io::Read + io::Seek>(reader: R) -> Result<TextureAtlas2DRe
         let kind = ErrorKind::CouldNotLoadImageBuffer;
         TextureAtlas2DError::new(kind, Some(Box::new(e)))
     })?;
-    let coordinate_charts: HashMap<String, BoundingBoxPixelCoords> = serde_json::from_reader(coordinate_charts_file).map_err(|e| {
+    let atlas_chart_data: TextureAtlas2DSerialization = serde_json::from_reader(coordinate_charts_file).map_err(|e| {
         let kind = ErrorKind::CouldNotLoadImageBuffer;
         TextureAtlas2DError::new(kind, Some(Box::new(e)))
     })?;
@@ -528,6 +543,7 @@ pub fn from_reader<R: io::Read + io::Seek>(reader: R) -> Result<TextureAtlas2DRe
         TextureAtlas2DWarning::NoWarnings
     };
 
+    let coordinate_charts = atlas_chart_data.coordinate_charts;
     let names: Vec<String> = coordinate_charts.keys().map(|s| s.clone()).collect();
     let mut pixel_offsets: Vec<BoundingBoxPixelCoords> = vec![];
     for i in 0..names.len() {
@@ -535,7 +551,7 @@ pub fn from_reader<R: io::Read + io::Seek>(reader: R) -> Result<TextureAtlas2DRe
     }
 
     let color_type = tex_image.color_type;
-    let origin = Origin::BottomLeft;
+    let origin = atlas_chart_data.origin;
     let atlas = TextureAtlas2D::new(width, height, color_type, origin, names, pixel_offsets, tex_image.data);
 
     Ok(TextureAtlas2DResult {
@@ -553,7 +569,6 @@ pub fn to_writer<W: io::Write + io::Seek>(writer: W, atlas: &TextureAtlas2D) -> 
 
     // Write out the coordinate charts.
     zip_file.start_file("coordinate_charts.json", options)?;
-    serde_json::to_writer_pretty(&mut zip_file, &atlas.origin)?;
     serde_json::to_writer_pretty(&mut zip_file, &atlas.coordinate_charts())?;
 
     // if the origin is the bottom left of the image, we need to flip the image back over

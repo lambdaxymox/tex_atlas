@@ -197,12 +197,51 @@ fn every_pixel_bounding_box_has_a_corresponding_uv_bounding_box() {
 /// The texture atlas decoder correctly parses the names and pixel bounding boxes 
 /// of the textures in the atlas.
 #[test]
-fn resulting_texture_atlas_entries_match_expected_atlas_extries() {
+fn resulting_texture_atlas_entries_match_expected_atlas_entries_by_name() {
     let result_atlas = tex_atlas::load_file(SAMPLE_DATA).unwrap().atlas;
     let expected_atlas = atlas();
     for name in expected_atlas.names().iter() {
         let expected = expected_atlas.get_name(name);
         let result = result_atlas.get_name(name);
+        assert_eq!(result, expected);
+    }
+}
+
+/// The texture atlas decoder correctly parses the names and pixel bounding boxes 
+/// of the textures in the atlas.
+#[test]
+fn resulting_texture_atlas_entries_match_expected_atlas_entries_by_index() {
+    let result_atlas = tex_atlas::load_file(SAMPLE_DATA).unwrap().atlas;
+    let expected_atlas = atlas();
+    for i in 0..expected_atlas.texture_count() {
+        let expected = expected_atlas.get_index(i);
+        let result = result_atlas.get_index(i);
+        assert_eq!(result, expected);
+    }
+}
+
+/// The texture atlas decoder correctly parses the names and texture coordinate
+///  bounding boxes of the textures in the atlas.
+#[test]
+fn resulting_texture_atlas_entries_match_expected_atlas_entries_by_name_tex() {
+    let result_atlas = tex_atlas::load_file(SAMPLE_DATA).unwrap().atlas;
+    let expected_atlas = atlas();
+    for name in expected_atlas.names().iter() {
+        let expected = expected_atlas.get_name_uv(name);
+        let result = result_atlas.get_name_uv(name);
+        assert_eq!(result, expected);
+    }
+}
+
+/// The texture atlas decoder correctly parses the names and texture coordinate 
+/// bounding boxes of the textures in the atlas.
+#[test]
+fn resulting_texture_atlas_entries_match_expected_atlas_entries_by_index_tex() {
+    let result_atlas = tex_atlas::load_file(SAMPLE_DATA).unwrap().atlas;
+    let expected_atlas = atlas();
+    for i in 0..expected_atlas.texture_count() {
+        let expected = expected_atlas.get_index_uv(i);
+        let result = result_atlas.get_index_uv(i);
         assert_eq!(result, expected);
     }
 }

@@ -249,7 +249,9 @@ impl TextureAtlas2D {
             let uv_bounding_box = UVBoundingBox { top_left: uv_offset, width: uv_width, height: uv_height };
             uv_offsets.push(uv_bounding_box);
         }
+        
         assert_eq!(pixel_offsets.len(), uv_offsets.len());
+        
         TextureAtlas2D {
             width: width,
             height: height,

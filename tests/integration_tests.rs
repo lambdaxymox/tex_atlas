@@ -160,6 +160,17 @@ fn each_texture_in_the_atlas_exists() {
     }
 }
 
+/// Textures that are not present in the atlas should not be found by the query
+/// methods.
+#[test]
+fn each_texture_absent_from_the_atlas_does_not_exist() {
+    let atlas = tex_atlas::load_file(SAMPLE_DATA).unwrap().atlas;
+    let names = atlas.names();
+    for name in names.iter() {
+        assert!(atlas.get_name(name).is_none(), "{}", name);
+    }
+}
+
 /// Every texture has a corresponding bounding box.
 #[test]
 fn every_texture_corresponding_bounding_box() {

@@ -143,45 +143,83 @@ pub enum TextureAtlas2DWarning {
 /// The position of the top left corner of the bounding box in texture coordinates
 /// of the unit square [0,1] x [0,1].
 #[derive(Copy, Clone, Debug, PartialEq, Serialize, Deserialize)]
-pub struct UVOffset {
+pub struct OffsetTexCoords {
     /// The horizontal coordinate.
     pub u: f32,
     /// The vertical coordinate.
     pub v: f32,
 }
 
+impl OffsetTexCoords {
+    fn new(u: f32, v: f32) -> OffsetTexCoords {
+        OffsetTexCoords {
+            u: u,
+            v: v,
+        }
+    }
+}
+
 /// The parameters describing the position and dimensions of the bounding box
 /// in texture corrdinates in the unit square [0,1] x [0,1].  
 #[derive(Copy, Clone, Debug, PartialEq, Serialize, Deserialize)]
-pub struct UVBoundingBox {
+pub struct BoundingBoxTexCoords {
     /// The position of the top left corner of the bounding box.
-    top_left: UVOffset,
+    top_left: OffsetTexCoords,
     /// The width of the bounding box.
     width: f32,
     // The height of the bounding box.
     height: f32,
 }
 
+impl BoundingBoxTexCoords {
+    fn new(top_left: OffsetTexCoords, width: f32, height: f32) -> BoundingBoxTexCoords {
+        BoundingBoxTexCoords {
+            top_left: top_left,
+            width: width,
+            height: height,
+        }
+    }
+}
+
 /// The position of the top left corner of the bounding box in
 /// terms of the raw pixel position in the underlying image array.
 #[derive(Copy, Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
-pub struct PixelOffset {
+pub struct OffsetPixelCoords {
     /// The horizontal coordinate.
     pub u: usize,
     /// The vertical coordinate.
     pub v: usize,
 }
 
+impl OffsetPixelCoords {
+    fn new(u: usize, v: usize) -> OffsetPixelCoords {
+        OffsetPixelCoords {
+            u: u,
+            v: v,
+        }
+    }
+}
+
 /// The parameter that describe the position and dimensions of the bounding box
 /// in terms of the location inside the underlying storage of the pixels.
 #[derive(Copy, Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
-pub struct PixelBoundingBox {
+pub struct BoundingBoxPixelCoords {
     /// The position of the top left corner of the bounding box.
-    pub top_left: PixelOffset,
+    pub top_left: OffsetPixelCoords,
     /// The width in pixels of the bounding box.
     pub width: usize,
     /// The height in pixels of the bounding box.
     pub height: usize,
+}
+
+impl BoundingBoxPixelCoords {
+    fn new(top_left: OffsetPixelCoords, width: usize, height: usize) -> BoundingBoxPixelCoords {
+        BoundingBoxPixelCoords {
+            top_left: top_left,
+            width: width,
+            height: height,
+        }
+    }
 }
 
 #[derive(Clone, Debug)]
@@ -234,16 +272,35 @@ impl TextureImage2D {
 }
 
 #[derive(Clone, Debug)]
+struct AtlasEntry {
+    name: String,
+    bounding_box_tex: BoundingBoxTexCoords,
+    bounding_box_pix: BoundingBoxPixelCoords,
+}
+
+impl AtlasEntry {
+    fn new(name: String, 
+        bounding_box_tex: BoundingBoxTexCoords, 
+        bounding_box_pix: BoundingBoxPixelCoords) -> AtlasEntry {
+        
+        AtlasEntry {
+            name: name,
+            bounding_box_tex: bounding_box_tex,
+            bounding_box_pix: bounding_box_pix,
+        }
+    }
+}
+
+#[derive(Clone, Debug)]
 pub struct TextureAtlas2D {
     pub width: usize,
     pub height: usize,
     pub channel_count: usize,
     pub bytes_per_pixel: usize,
     pub color_type: ColorType,
-    pub origin: Origin,
-    names: Vec<String>,
-    uv_offsets: Vec<UVBoundingBox>,
-    pixel_offsets: Vec<PixelBoundingBox>,
+    origin: Origin,
+    names: HashMap<String, usize>,
+    bounding_boxes: Vec<AtlasEntry>,
     data: TextureImage2D,
 }
 
@@ -251,23 +308,29 @@ impl TextureAtlas2D {
     /// Construct a texture atlas.
     pub fn new(
         width: usize, height: usize, color_type: ColorType, origin: Origin, 
-        names: Vec<String>, pixel_offsets: Vec<PixelBoundingBox>, data: Vec<u8>) -> TextureAtlas2D {
+        names: Vec<String>, pixel_offsets: Vec<BoundingBoxPixelCoords>, data: Vec<u8>) -> TextureAtlas2D {
         
         let image_data = TextureImage2D::new(width, height, color_type, data);
-        let mut uv_offsets = vec![];
-        for i in 0..pixel_offsets.len() {
-            let bounding_box = pixel_offsets[i];
-            let top_left = bounding_box.top_left;
+        let mut bounding_boxes = vec![];
+        for i in 0..names.len() {
+            let name = &names[i];
+            let bounding_box_pix = pixel_offsets[i];
+            let top_left = bounding_box_pix.top_left;
             let u = top_left.u as f32 / width as f32;
             let v = top_left.v as f32 / height as f32;
-            let uv_offset = UVOffset { u: u, v: v  };
-            let uv_width = bounding_box.width as f32 / width as f32;
-            let uv_height = bounding_box.height as f32 / height as f32;
-            let uv_bounding_box = UVBoundingBox { top_left: uv_offset, width: uv_width, height: uv_height };
-            uv_offsets.push(uv_bounding_box);
+            let offset_tex = OffsetTexCoords::new(u, v);
+            let width_tex = bounding_box_pix.width as f32 / width as f32;
+            let height_tex = bounding_box_pix.height as f32 / height as f32;
+            let bounding_box_tex = BoundingBoxTexCoords::new(offset_tex, width_tex, height_tex);
+            let entry = AtlasEntry::new(name.clone(), bounding_box_tex, bounding_box_pix);
+            bounding_boxes.push(entry);
         }
-        
-        assert_eq!(pixel_offsets.len(), uv_offsets.len());
+
+        let mut tex_names = HashMap::new();
+        for i in 0..bounding_boxes.len() {
+            let tex_name = bounding_boxes[i].name.clone();
+            tex_names.insert(tex_name, i);
+        }
         
         TextureAtlas2D {
             width: width,
@@ -276,9 +339,8 @@ impl TextureAtlas2D {
             bytes_per_pixel: image_data.bytes_per_pixel,
             color_type: color_type,
             origin: origin,
-            names: names,
-            uv_offsets: uv_offsets,
-            pixel_offsets: pixel_offsets,
+            names: tex_names,
+            bounding_boxes: bounding_boxes,
             data: image_data,
         }
     }
@@ -318,7 +380,8 @@ impl TextureAtlas2D {
 
     /// Get the collection of all bounding boxes for the textures inside the 
     /// texture atlas.
-    pub fn coordinate_charts(&self) -> HashMap<&str, PixelBoundingBox> {
+    /*
+    pub fn coordinate_charts(&self) -> HashMap<&str, AtlasEntry> {
         let mut charts = HashMap::new();
         for i in 0..self.texture_count() {
             let name = self.names[i].as_str();
@@ -328,35 +391,44 @@ impl TextureAtlas2D {
 
         charts
     }
+    */
 
     /// Get the set of all texture names for the textures inside the 
     /// texture atlas.
+    /*
     pub fn names(&self) -> Vec<&str> {
         self.names.iter().map(|s| s.as_str()).collect()
     }
+    */
 
-    pub fn get_name(&self, name: &str) -> Option<PixelBoundingBox> {
+    pub fn get_name(&self, name: &str) -> Option<BoundingBoxPixelCoords> {
         None
     }
 
-    pub fn get_name_uv(&self, name: &str) -> Option<UVBoundingBox> {
+    pub fn get_name_uv(&self, name: &str) -> Option<BoundingBoxTexCoords> {
         None
     }
 
-    pub fn get_index(&self, index: usize) -> Option<PixelBoundingBox> {
+    pub fn get_index(&self, index: usize) -> Option<BoundingBoxPixelCoords> {
+        /*
         if index < self.pixel_offsets.len() {
             Some(self.pixel_offsets[index])
         } else {
             None
         }
+        */
+        None
     }
 
-    pub fn get_index_uv(&self, index: usize) -> Option<UVBoundingBox> {
+    pub fn get_index_uv(&self, index: usize) -> Option<BoundingBoxTexCoords> {
+        /*
         if index < self.uv_offsets.len() {
             Some(self.uv_offsets[index])
         } else {
             None
         }
+        */
+        None
     }
 }
 
@@ -440,7 +512,7 @@ pub fn from_reader<R: io::Read + io::Seek>(reader: R) -> Result<TextureAtlas2DRe
         let kind = ErrorKind::CouldNotLoadImageBuffer;
         TextureAtlas2DError::new(kind, Some(Box::new(e)))
     })?;
-    let coordinate_charts: HashMap<String, PixelBoundingBox> = serde_json::from_reader(coordinate_charts_file).map_err(|e| {
+    let coordinate_charts: HashMap<String, BoundingBoxPixelCoords> = serde_json::from_reader(coordinate_charts_file).map_err(|e| {
         let kind = ErrorKind::CouldNotLoadImageBuffer;
         TextureAtlas2DError::new(kind, Some(Box::new(e)))
     })?;
@@ -460,7 +532,7 @@ pub fn from_reader<R: io::Read + io::Seek>(reader: R) -> Result<TextureAtlas2DRe
     };
 
     let names: Vec<String> = coordinate_charts.keys().map(|s| s.clone()).collect();
-    let mut pixel_offsets: Vec<PixelBoundingBox> = vec![];
+    let mut pixel_offsets: Vec<BoundingBoxPixelCoords> = vec![];
     for i in 0..names.len() {
         pixel_offsets.push(coordinate_charts[&names[i]]);
     }
@@ -484,7 +556,7 @@ pub fn to_writer<W: io::Write + io::Seek>(writer: W, atlas: &TextureAtlas2D) -> 
 
     // Write out the coordinate charts.
     zip_file.start_file("coordinate_charts.json", options)?;
-    serde_json::to_writer_pretty(&mut zip_file, &atlas.coordinate_charts())?;
+    //serde_json::to_writer_pretty(&mut zip_file, &atlas.coordinate_charts())?;
 
     // if the origin is the bottom left of the image, we need to flip the image back over
     // before writing it out. PNG images index starting from the top left corner of

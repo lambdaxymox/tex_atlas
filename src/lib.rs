@@ -448,18 +448,9 @@ pub fn from_reader<R: io::Read + io::Seek>(reader: R) -> Result<TextureAtlas2DRe
         pixel_offsets.push(coordinate_charts[&names[i]]);
     }
 
-    let atlas = TextureAtlas2D {
-        width: tex_image.width,
-        height: tex_image.height,
-        channel_count: tex_image.channel_count,
-        bytes_per_pixel: tex_image.bytes_per_pixel,
-        color_type: tex_image.color_type,
-        origin: Origin::BottomLeft,
-        names: names,
-        uv_offsets: vec![],
-        pixel_offsets: pixel_offsets,
-        data: tex_image,
-    };
+    let color_type = tex_image.color_type;
+    let origin = Origin::BottomLeft;
+    let atlas = TextureAtlas2D::new(width, height, color_type, origin, names, pixel_offsets, tex_image.data);
 
     Ok(TextureAtlas2DResult {
         atlas: atlas,

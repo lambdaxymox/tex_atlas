@@ -231,6 +231,7 @@ pub struct TextureAtlas2D {
 }
 
 impl TextureAtlas2D {
+    /// Construct a texture atlas.
     pub fn new(
         width: usize, height: usize, color_type: ColorType, origin: Origin, 
         names: Vec<String>, pixel_offsets: Vec<PixelBoundingBox>, data: Vec<u8>) -> TextureAtlas2D {
@@ -251,11 +252,13 @@ impl TextureAtlas2D {
         }
     }
 
+    /// Get the length of texture atlas image in units of the number of pixels.
     #[inline]
     pub fn len_pixels(&self) -> usize {
         self.data.len_pixels()
     }
 
+    /// Get the length of the texture atlas image in units of bytes.
     #[inline]
     pub fn len_bytes(&self) -> usize {
         self.data.len_bytes()
@@ -270,16 +273,20 @@ impl TextureAtlas2D {
         self.data.as_ptr()
     }
 
+    /// Get a view into the texture atlas image as a byte slice
     #[inline]
     pub fn as_bytes(&self) -> &[u8] {
         &self.data.as_bytes()
     }
 
+    /// Get the number of textures in the texture atlas.
     #[inline]
     pub fn texture_count(&self) -> usize {
         self.names.len()
     }
 
+    /// Get the collection of all bounding boxes for the textures inside the 
+    /// texture atlas.
     pub fn coordinate_charts(&self) -> HashMap<&str, PixelBoundingBox> {
         let mut charts = HashMap::new();
         for i in 0..self.texture_count() {
@@ -291,8 +298,34 @@ impl TextureAtlas2D {
         charts
     }
 
+    /// Get the set of all texture names for the textures inside the 
+    /// texture atlas.
     pub fn names(&self) -> Vec<&str> {
         self.names.iter().map(|s| s.as_str()).collect()
+    }
+
+    pub fn get_by_name(name: &str) -> Option<PixelBoundingBox> {
+        None
+    }
+
+    pub fn get_by_name_uv(name: &str) -> Option<UVBoundingBox> {
+        None
+    }
+
+    pub fn get_by_index(&self, index: usize) -> Option<PixelBoundingBox> {
+        if index > self.pixel_offsets.len() {
+            Some(self.pixel_offsets[index])
+        } else {
+            None
+        }
+    }
+
+    pub fn get_by_index_uv(&self, index: usize) -> Option<UVBoundingBox> {
+        if index > self.pixel_offsets.len() {
+            Some(self.uv_offsets[index])
+        } else {
+            None
+        }
     }
 }
 
@@ -432,7 +465,8 @@ pub fn to_writer<W: io::Write + io::Seek>(writer: W, atlas: &TextureAtlas2D) -> 
     serde_json::to_writer_pretty(&mut zip_file, &atlas.coordinate_charts())?;
 
     // if the origin is the bottom left of the image, we need to flip the image back over
-    // before writing it out.
+    // before writing it out. PNG images index starting from the top left corner of
+    // the image.
     let mut image = atlas.image().clone();
     if atlas.origin == Origin::BottomLeft {
         let height = atlas.height;

@@ -290,6 +290,10 @@ impl TextureAtlas2D {
 
         charts
     }
+
+    pub fn names(&self) -> Vec<&str> {
+        self.names.iter().map(|s| s.as_str()).collect()
+    }
 }
 
 /// This type bundles together a texture atlas and any possible warnings generated

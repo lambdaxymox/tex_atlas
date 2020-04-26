@@ -399,33 +399,33 @@ impl TextureAtlas2D {
     }
 
     pub fn get_name(&self, name: &str) -> Option<BoundingBoxPixelCoords> {
-        None
+        match self.names.get(name) {
+            Some(index) => Some(self.bounding_boxes[*index].bounding_box_pix),
+            None => None,
+        }
     }
 
     pub fn get_name_uv(&self, name: &str) -> Option<BoundingBoxTexCoords> {
-        None
+        match self.names.get(name) {
+            Some(index) => Some(self.bounding_boxes[*index].bounding_box_tex),
+            None => None,
+        }
     }
 
     pub fn get_index(&self, index: usize) -> Option<BoundingBoxPixelCoords> {
-        /*
-        if index < self.pixel_offsets.len() {
-            Some(self.pixel_offsets[index])
+        if index < self.bounding_boxes.len() {
+            Some(self.bounding_boxes[index].bounding_box_pix)
         } else {
             None
         }
-        */
-        None
     }
 
     pub fn get_index_uv(&self, index: usize) -> Option<BoundingBoxTexCoords> {
-        /*
-        if index < self.uv_offsets.len() {
-            Some(self.uv_offsets[index])
+        if index < self.bounding_boxes.len() {
+            Some(self.bounding_boxes[index].bounding_box_tex)
         } else {
             None
         }
-        */
-        None
     }
 }
 

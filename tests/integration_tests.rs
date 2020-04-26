@@ -30,6 +30,8 @@ fn to_byte_vec(vec: Vec<u32>) -> Vec<u8> {
 fn atlas() -> TextureAtlas2D {
     let width = 16;
     let height = 16;
+    let texture_width = 8;
+    let texture_height = 8;
     let color_type = ColorType::Rgba8;
     let origin = Origin::BottomLeft;
     let data: Vec<u8> = to_byte_vec(vec![
@@ -50,11 +52,15 @@ fn atlas() -> TextureAtlas2D {
         0xFF0000FF, 0xFF0000FF, 0xFF0000FF, 0xFF0000FF, 0xFF0000FF, 0xFF0000FF, 0xFF0000FF, 0xFF0000FF, 0x00FF00FF, 0x00FF00FF, 0x00FF00FF, 0x00FF00FF, 0x00FF00FF, 0x00FF00FF, 0x00FF00FF, 0x00FF00FF,
         0xFF0000FF, 0xFF0000FF, 0xFF0000FF, 0xFF0000FF, 0xFF0000FF, 0xFF0000FF, 0xFF0000FF, 0xFF0000FF, 0x00FF00FF, 0x00FF00FF, 0x00FF00FF, 0x00FF00FF, 0x00FF00FF, 0x00FF00FF, 0x00FF00FF, 0x00FF00FF,
     ]);
-    let names = vec![format!("sample")];
-    let top_left = OffsetPixelCoords { u: 0, v: 15 };
-    let pixel_offsets = vec![BoundingBoxPixelCoords { top_left: top_left, width: width, height: height }];
+    let names = vec![format!("red"), format!("green"), format!("blue"), format!("black")];
+    let coordinate_charts = vec![
+        BoundingBoxPixelCoords { top_left: OffsetPixelCoords { u: 0, v: 15 }, width: texture_width, height: texture_height },
+        BoundingBoxPixelCoords { top_left: OffsetPixelCoords { u: 8, v: 15 }, width: texture_width, height: texture_height },
+        BoundingBoxPixelCoords { top_left: OffsetPixelCoords { u: 0, v:  7 }, width: texture_width, height: texture_height },
+        BoundingBoxPixelCoords { top_left: OffsetPixelCoords { u: 8, v:  7 }, width: texture_width, height: texture_height },
+    ];
     
-    TextureAtlas2D::new(width, height, color_type, origin, names, pixel_offsets, data)
+    TextureAtlas2D::new(width, height, color_type, origin, names, coordinate_charts, data)
 }
 
 /// The sample file exists.
@@ -185,5 +191,18 @@ fn every_pixel_bounding_box_has_a_corresponding_uv_bounding_box() {
     let atlas = tex_atlas::load_file(SAMPLE_DATA).unwrap().atlas;
     for i in 0..atlas.texture_count() {
         assert!(atlas.get_index_uv(i).is_some());
+    }
+}
+
+/// The texture atlas decoder correctly parses the names and bounding boxes 
+/// of the textures in the atlas.
+#[test]
+fn resulting_texture_atlas_entries_match_expected_atlas_extries() {
+    let result_atlas = tex_atlas::load_file(SAMPLE_DATA).unwrap().atlas;
+    let expected_atlas = atlas();
+    for i in 0..expected_atlas.texture_count() {
+        let expected = expected_atlas.get_index(i);
+        let result = result_atlas.get_index(i);
+        assert_eq!(result, expected);
     }
 }

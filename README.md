@@ -4,7 +4,7 @@ the TexuteAtlas2D image format (defined by this library) for loading two-dimensi
 in computer graphics and game programming applications.
 
 # Usage
-To use the `tex_atlas`, add the following line to your `Cargo.toml` file.
+To use the `tex_atlas` library, add the following line to your `Cargo.toml` file.
 ```toml
 [dependencies]
 tex_atlas = { git = "https://github.com/lambdaxymox/tex_atlas" }

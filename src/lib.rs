@@ -6,10 +6,8 @@ use serde_derive::{Deserialize, Serialize};
 use std::path::Path;
 use std::error::Error;
 use std::fmt;
-use std::mem;
 use std::io;
 use std::fs::File;
-use std::slice;
 use std::collections::hash_map::HashMap;
 use std::error;
 
@@ -180,6 +178,13 @@ struct TextureImage2D {
     data: Vec<u8>,
 }
 
+impl AsRef<[u8]> for TextureImage2D {
+    #[inline]
+    fn as_ref(&self) -> &[u8] {
+        &self.data
+    }
+}
+
 impl TextureImage2D {
     #[inline]
     fn new(width: usize, height: usize, color_type: ColorType, data: Vec<u8>) -> TextureImage2D {
@@ -206,16 +211,10 @@ impl TextureImage2D {
         self.data.as_ptr()
     }
 
+    #[inline]
     fn as_bytes(&self) -> &[u8] {
-        let ptr: *const u8 = &self.data[0];
-        let len_bytes = self.width * self.height * self.bytes_per_pixel;
-        let bytes = unsafe { 
-            slice::from_raw_parts(ptr, len_bytes)
-        };
-
-        bytes
+        self.as_ref()
     }
-
 }
 
 #[derive(Clone, Debug)]
@@ -274,7 +273,7 @@ impl TextureAtlas2D {
 
     #[inline]
     pub fn as_bytes(&self) -> &[u8] {
-        self.data.as_bytes()
+        &self.data.as_bytes()
     }
 
     #[inline]

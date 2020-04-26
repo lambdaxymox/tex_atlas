@@ -57,6 +57,13 @@ fn atlas() -> TextureAtlas2D {
     TextureAtlas2D::new(width, height, color_type, origin, names, pixel_offsets, data)
 }
 
+/// The sample file exists.
+#[test]
+fn sample_file_exists() {
+    let atlas = tex_atlas::load_file(SAMPLE_DATA);
+    assert!(atlas.is_ok());
+}
+
 /// The file loader yields the correct width.
 #[test]
 fn load_file_yields_correct_width() {
@@ -140,4 +147,15 @@ fn load_file_yields_correct_texture_atlas_data() {
     let expected = expected_atlas.as_bytes();
 
     assert_eq!(result, expected);
+}
+
+/// Every texture name that we parse from the atlas files should exist
+/// in the texture atlas.
+#[test]
+fn each_texture_in_the_atlas_exists() {
+    let atlas = tex_atlas::load_file(SAMPLE_DATA).unwrap().atlas;
+    let names = atlas.names();
+    for name in names.iter() {
+        assert!(atlas.get_by_name(name).is_some(), "{}", name);
+    }
 }

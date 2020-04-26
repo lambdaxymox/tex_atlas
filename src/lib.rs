@@ -304,11 +304,11 @@ impl TextureAtlas2D {
         self.names.iter().map(|s| s.as_str()).collect()
     }
 
-    pub fn get_by_name(name: &str) -> Option<PixelBoundingBox> {
+    pub fn get_by_name(&self, name: &str) -> Option<PixelBoundingBox> {
         None
     }
 
-    pub fn get_by_name_uv(name: &str) -> Option<UVBoundingBox> {
+    pub fn get_by_name_uv(&self, name: &str) -> Option<UVBoundingBox> {
         None
     }
 

@@ -3,11 +3,9 @@ use std::io;
 use std::path::Path;
 
 use tex_atlas;
-use tex_atlas::{BoundingBoxPixelCoords, OffsetPixelCoords, TextureAtlas2D};
 
 
-const SAMPLE_DATA: &str = "assets/sample.atlas";
-const EXAMPLE_DATA: &str = "assets/example.atlas";
+const SAMPLE_DATA: &str = "assets/example.atlas";
 
 
 /// Loading an atlas file that does not exist should fail.

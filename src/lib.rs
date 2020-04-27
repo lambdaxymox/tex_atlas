@@ -637,7 +637,10 @@ pub fn load_from_memory(buffer: &[u8]) -> Result<TextureAtlas2DResult, TextureAt
 
 /// Load a texture atlas directly from a file.
 pub fn load_file<P: AsRef<Path>>(path: P) -> Result<TextureAtlas2DResult, TextureAtlas2DError> {
-    let reader = File::open(&path).unwrap();
+    let reader = File::open(&path).map_err(|e|{
+        let kind = ErrorKind::CouldNotOpenTextureAtlas;
+        TextureAtlas2DError::new(kind, Some(Box::new(e)))
+    })?;
     from_reader(reader)
 }
 

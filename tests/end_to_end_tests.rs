@@ -154,3 +154,19 @@ fn atlas_file_written_and_then_read_should_match_bytes_per_channel() {
 
     assert_eq!(result_bytes_per_pixel, expected_bytes_per_pixel);
 }
+
+/// Given a valid texture atlas, if we read it, write it to a new file, and read
+/// the new file back, we should get the same exact texture atlas back. That is, 
+/// give a texture atlas, reading and writing should satisfy the relation
+/// ```
+/// read(write(read(file1), file2)), file2) == read(file1).
+/// ```
+/// The number of textures in the atlases should match.
+#[test]
+fn atlas_file_written_and_then_read_should_match_texture_counts() {
+    let test = read_write_test(SAMPLE_DATA);
+    let result_count = test.result_atlas.texture_count();
+    let expected_count = test.expected_atlas.texture_count();
+
+    assert_eq!(result_count, expected_count);
+}

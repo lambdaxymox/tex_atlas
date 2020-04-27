@@ -527,14 +527,6 @@ fn load_image_from_reader<R: io::Read>(reader: R) -> Result<TextureImage2D, Text
     Ok(tex_image)
 }
 
-/// Load a PNG texture image from a file name.
-fn load_image_from_file<P: AsRef<Path>>(file_path: P) -> Result<TextureImage2D, TextureAtlas2DError> {
-    let reader = File::open(file_path).map_err(|e| {
-        let kind = ErrorKind::CouldNotLoadImageBuffer;
-        TextureAtlas2DError::new(kind, Some(Box::new(e)))
-    })?;
-    load_image_from_reader(reader)
-}
 
 /// Load a texture atlas from any endpoint that can be read from. This include files
 /// and buffers in memory.

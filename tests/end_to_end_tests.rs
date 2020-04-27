@@ -107,3 +107,18 @@ fn atlas_file_written_and_then_read_should_match_origins() {
     assert_eq!(result_origin, expected_origin);
 }
 
+/// Given a valid texture atlas, if we read it, write it to a new file, and read
+/// the new file back, we should get the same exact texture atlas back. That is, 
+/// give a texture atlas, reading and writing should satisfy the relation
+/// ```
+/// read(write(read(file1), file2)), file2) == read(file1).
+/// ```
+/// The color space types of the atlases should match.
+#[test]
+fn atlas_file_written_and_then_read_should_match_color_types() {
+    let test = read_write_test(SAMPLE_DATA);
+    let result_color_type = test.result_atlas.color_type;
+    let expected_color_type = test.expected_atlas.color_type;
+
+    assert_eq!(result_color_type, expected_color_type);
+}

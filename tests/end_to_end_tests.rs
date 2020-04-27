@@ -70,6 +70,25 @@ fn read_write_test<P: AsRef<Path>>(expected_path: P) -> ReadWriteTest {
 #[test]
 fn atlas_file_written_and_then_read_should_match_heights() {
     let test = read_write_test(SAMPLE_DATA);
+    let result_height = test.result_atlas.height;
+    let expected_height = test.expected_atlas.height;
 
-    assert_eq!(test.result_atlas.height, test.expected_atlas.height);
+    assert_eq!(result_height, expected_height);
 }
+
+/// Given a valid texture atlas, if we read it, write it to a new file, and read
+/// the new file back, we should get the same exact texture atlas back. That is, 
+/// give a texture atlas, reading and writing should satisfy the relation
+/// ```
+/// read(write(read(file1), file2)), file2) == read(file1).
+/// ```
+/// The width in pixels of the atlas images should match.
+#[test]
+fn atlas_file_written_and_then_read_should_match_widths() {
+    let test = read_write_test(SAMPLE_DATA);
+    let result_width = test.result_atlas.width;
+    let expected_width = test.expected_atlas.width;
+
+    assert_eq!(result_width, expected_width);
+}
+

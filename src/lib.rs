@@ -271,10 +271,17 @@ impl TextureImage2D {
     }
 }
 
+/// An atlas entry contains all the information about where a 
+/// texture is located in the atlas image, and what the name of the
+/// texture is.
 #[derive(Clone, Debug, Serialize, Deserialize)]
 struct AtlasEntry {
+    /// The name of the texture.
     name: String,
+    /// The bounding box for the texture denominated in units of the unit square 
+    /// [0,1] x [0,1].
     bounding_box_tex: BoundingBoxTexCoords,
+    /// The bounding box for the texture denominated in units of pixels.
     bounding_box_pix: BoundingBoxPixelCoords,
 }
 
@@ -291,6 +298,8 @@ impl AtlasEntry {
     }
 }
 
+/// A struct for organizing the serialization and deserialization of
+/// a texture in the texture atlas.
 #[derive(Serialize, Deserialize)]
 struct TextureAtlas2DSerializationEntry {
     name: String,
@@ -306,6 +315,8 @@ impl TextureAtlas2DSerializationEntry {
     } 
 }
 
+/// A struct for organizing the serialization and deserialization of a 
+/// texture atlas.
 #[derive(Serialize, Deserialize)]
 struct TextureAtlas2DSerialization {
     origin: Origin,
@@ -427,6 +438,7 @@ impl TextureAtlas2D {
         self.names.keys().map(|s| s.as_str()).collect()
     }
 
+    /// Get the bounding box in units of pixels for a texture by name.
     pub fn get_name(&self, name: &str) -> Option<BoundingBoxPixelCoords> {
         match self.names.get(name) {
             Some(index) => Some(self.bounding_boxes[index].bounding_box_pix),
@@ -434,6 +446,7 @@ impl TextureAtlas2D {
         }
     }
 
+    /// Get the bounding box in units of the unit square for a texture by name.
     pub fn get_name_uv(&self, name: &str) -> Option<BoundingBoxTexCoords> {
         match self.names.get(name) {
             Some(index) => Some(self.bounding_boxes[index].bounding_box_tex),
@@ -441,6 +454,7 @@ impl TextureAtlas2D {
         }
     }
 
+    /// Get the bounding box in units of pixels for a texture by index.
     pub fn get_index(&self, index: usize) -> Option<BoundingBoxPixelCoords> {
         if index < self.bounding_boxes.len() {
             Some(self.bounding_boxes[&index].bounding_box_pix)
@@ -449,6 +463,7 @@ impl TextureAtlas2D {
         }
     }
 
+    /// Get the bounding box in units of the unit square for a texture by index.
     pub fn get_index_uv(&self, index: usize) -> Option<BoundingBoxTexCoords> {
         if index < self.bounding_boxes.len() {
             Some(self.bounding_boxes[&index].bounding_box_tex)

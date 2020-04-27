@@ -609,7 +609,7 @@ pub fn to_writer<W: io::Write + io::Seek>(writer: W, atlas: &TextureAtlas2D) -> 
     serde_json::to_writer_pretty(&mut zip_file, &atlas.coordinate_charts())?;
 
     // if the origin is the bottom left of the image, we need to flip the image back over
-    // before writing it out. PNG images index starting from the top left corner of
+    // before writing it out. PNG images index start from the top left corner of
     // the image.
     let mut image = atlas.image().clone();
     let origin = atlas.origin;

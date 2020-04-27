@@ -291,3 +291,90 @@ fn atlas_file_written_and_then_read_should_preserve_underlying_image_data_length
     
     assert_eq!(result_atlas.len_bytes(), expected_atlas.len_bytes());
 }
+
+/// Given a valid texture atlas, if we read it, write it to a new file, and read
+/// the new file back, we should get the same exact texture atlas back. That is, 
+/// give a texture atlas, reading and writing should satisfy the relation
+/// ```
+/// read(write(read(file1), file2)), file2) == read(file1).
+/// ```
+/// The texture names should act as a primary key for the atlas: i.e., the 
+/// texture names and the associated textures should be preserved.
+#[test]
+fn atlas_file_written_and_then_read_should_preserve_texture_names_uv() {
+    let test = read_write_test(SAMPLE_DATA);
+    let result_atlas = test.result_atlas;
+    let expected_atlas = test.expected_atlas;
+    for name in result_atlas.names().iter() {
+        let result = result_atlas.get_name_uv(name);
+        let expected = expected_atlas.get_name_uv(name);
+        assert_eq!(result, expected);
+    }
+}
+
+#[test]
+fn atlas_file_written_and_then_read_should_preserve_texture_names_uv2() {
+    let test = read_write_test(SAMPLE_DATA);
+    let result_atlas = test.result_atlas;
+    let expected_atlas = test.expected_atlas;
+    for name in expected_atlas.names().iter() {
+        let result = result_atlas.get_name_uv(name);
+        let expected = expected_atlas.get_name_uv(name);
+        assert_eq!(result, expected);
+    }
+}
+
+/// Given a valid texture atlas, if we read it, write it to a new file, and read
+/// the new file back, we should get the same exact texture atlas back. That is, 
+/// give a texture atlas, reading and writing should satisfy the relation
+/// ```
+/// read(write(read(file1), file2)), file2) == read(file1).
+/// ```
+/// The texture indices should act as a primary key for the atlas: i.e., the 
+/// texture indices and the associated textures should be preserved.
+#[test]
+fn atlas_file_written_and_then_read_should_preserve_texture_indices_uv() {
+    let test = read_write_test(SAMPLE_DATA);
+    let result_atlas = test.result_atlas;
+    let expected_atlas = test.expected_atlas;
+    for index in result_atlas.indices().iter() {
+        let result = result_atlas.get_index_uv(*index);
+        let expected = expected_atlas.get_index_uv(*index);
+        assert_eq!(result, expected);
+    }
+}
+
+#[test]
+fn atlas_file_written_and_then_read_should_preserve_texture_indices_uv2() {
+    let test = read_write_test(SAMPLE_DATA);
+    let result_atlas = test.result_atlas;
+    let expected_atlas = test.expected_atlas;
+    for index in expected_atlas.indices().iter() {
+        let result = result_atlas.get_index_uv(*index);
+        let expected = expected_atlas.get_index_uv(*index);
+        assert_eq!(result, expected);
+    }
+}
+
+/// Given a valid texture atlas, if we read it, write it to a new file, and read
+/// the new file back, we should get the same exact texture atlas back. That is, 
+/// give a texture atlas, reading and writing should satisfy the relation
+/// ```
+/// read(write(read(file1), file2)), file2) == read(file1).
+/// ```
+/// Every texture index and texture name that match the same texture in the atlas should
+/// still do so when the data is written out and read back.
+#[test]
+fn atlas_file_written_and_then_read_should_preserve_textures_uv() {
+    let test = read_write_test(SAMPLE_DATA);
+    let result_atlas = test.result_atlas;
+    let expected_atlas = test.expected_atlas;
+    let indices = result_atlas.indices();
+    let names = result_atlas.names();
+    let result_zip = indices.iter().zip(names.iter());
+    for (index, name) in result_zip.filter(|(index, name)| { result_atlas.get_index_uv(**index) == result_atlas.get_name_uv(name) }) {
+        let expected_index = expected_atlas.get_index_uv(*index); 
+        let expected_name = expected_atlas.get_name_uv(name);
+        assert_eq!(expected_index, expected_name);
+    }
+}

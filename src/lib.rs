@@ -490,6 +490,21 @@ impl TextureAtlas2DResult {
     }
 }
 
+/// Orient the texture atlas image depending on the 
+/// position of the origin.
+fn orient_image(image: &mut [u8], origin: Origin, height: usize, width_in_bytes: usize) {
+    if origin == Origin::BottomLeft {
+        let half_height = height / 2;
+        for row in 0..half_height {
+            for col in 0..width_in_bytes {
+                let temp = image[row * width_in_bytes + col];
+                image[row * width_in_bytes + col] = image[((height - row - 1) * width_in_bytes) + col];
+                image[((height - row - 1) * width_in_bytes) + col] = temp;
+            }
+        }
+    }
+}
+
 /// Load an atlas image file from a reader.
 fn load_image_from_reader<R: io::Read>(reader: R) -> Result<TextureImage2D, TextureAtlas2DError> {
     let png_reader = png::PngDecoder::new(reader).map_err(|e| {
@@ -589,18 +604,10 @@ pub fn to_writer<W: io::Write + io::Seek>(writer: W, atlas: &TextureAtlas2D) -> 
     // before writing it out. PNG images index starting from the top left corner of
     // the image.
     let mut image = atlas.image().clone();
-    if atlas.origin == Origin::BottomLeft {
-        let height = atlas.height;
-        let width_in_bytes = 4 * atlas.width;
-        let half_height = atlas.height / 2;
-        for row in 0..half_height {
-            for col in 0..width_in_bytes {
-                let temp = image.data[row * width_in_bytes + col];
-                image.data[row * width_in_bytes + col] = image.data[((height - row - 1) * width_in_bytes) + col];
-                image.data[((height - row - 1) * width_in_bytes) + col] = temp;
-            }
-        }
-    }
+    let origin = atlas.origin;
+    let height = atlas.height;
+    let width_in_bytes = 4 * atlas.width;
+    orient_image(&mut image.data, origin, height, width_in_bytes);
 
     // Write out the atlas image.
     zip_file.start_file("atlas.png", options)?;

@@ -1,10 +1,9 @@
 use std::fs;
-use std::fs::File;
 use std::io;
 use std::path::Path;
 
 use tex_atlas;
-use tex_atlas::{ColorType, Origin, BoundingBoxPixelCoords, OffsetPixelCoords, TextureAtlas2D};
+use tex_atlas::{BoundingBoxPixelCoords, OffsetPixelCoords, TextureAtlas2D};
 
 
 const SAMPLE_DATA: &str = "assets/sample.atlas";
@@ -107,3 +106,4 @@ fn atlas_file_written_and_then_read_should_match_origins() {
 
     assert_eq!(result_origin, expected_origin);
 }
+

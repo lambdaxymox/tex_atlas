@@ -191,6 +191,18 @@ fn atlas_file_written_and_then_read_should_preserve_texture_names() {
     }
 }
 
+#[test]
+fn atlas_file_written_and_then_read_should_preserve_texture_names2() {
+    let test = read_write_test(SAMPLE_DATA);
+    let result_atlas = test.result_atlas;
+    let expected_atlas = test.expected_atlas;
+    for name in expected_atlas.names().iter() {
+        let result = result_atlas.get_name(name);
+        let expected = expected_atlas.get_name(name);
+        assert_eq!(result, expected);
+    }
+}
+
 /// Given a valid texture atlas, if we read it, write it to a new file, and read
 /// the new file back, we should get the same exact texture atlas back. That is, 
 /// give a texture atlas, reading and writing should satisfy the relation
@@ -208,5 +220,40 @@ fn atlas_file_written_and_then_read_should_preserve_texture_indices() {
         let result = result_atlas.get_index(*index);
         let expected = expected_atlas.get_index(*index);
         assert_eq!(result, expected);
+    }
+}
+
+#[test]
+fn atlas_file_written_and_then_read_should_preserve_texture_indices2() {
+    let test = read_write_test(SAMPLE_DATA);
+    let result_atlas = test.result_atlas;
+    let expected_atlas = test.expected_atlas;
+    for index in expected_atlas.indices().iter() {
+        let result = result_atlas.get_index(*index);
+        let expected = expected_atlas.get_index(*index);
+        assert_eq!(result, expected);
+    }
+}
+
+/// Given a valid texture atlas, if we read it, write it to a new file, and read
+/// the new file back, we should get the same exact texture atlas back. That is, 
+/// give a texture atlas, reading and writing should satisfy the relation
+/// ```
+/// read(write(read(file1), file2)), file2) == read(file1).
+/// ```
+/// Every texture index and texture name that match the same texture in the atlas should
+/// still do so when the data is written out and read back.
+#[test]
+fn atlas_file_written_and_then_read_should_preserve_textures() {
+    let test = read_write_test(SAMPLE_DATA);
+    let result_atlas = test.result_atlas;
+    let expected_atlas = test.expected_atlas;
+    let indices = result_atlas.indices();
+    let names = result_atlas.names();
+    let result_zip = indices.iter().zip(names.iter());
+    for (index, name) in result_zip.filter(|(index, name)| { result_atlas.get_index(**index) == result_atlas.get_name(name) }) {
+        let expected_index = expected_atlas.get_index(*index); 
+        let expected_name = expected_atlas.get_name(name);
+        assert_eq!(expected_index, expected_name);
     }
 }

@@ -172,24 +172,25 @@ impl error::Error for TextureAtlas2DError {
     }
 }
 
-/// The `Origin` parameter determines which part of the underlying texture atlas image is considered
-/// the origin of the image. That is, when trying to render the texture atlas in a graphics application,
-/// this parameter tells the texture atlas parser how to format the atlas image for rendering.
-/// Geometrically, there are two equivalence classes of orientations possible for the atlas. Each origin
+/// The `Origin` parameter determines which part of the underlying texture atlas 
+/// image is considered the origin of the image. That is, when trying to render the 
+/// texture atlas in a graphics application, this parameter tells the texture 
+/// atlas parser how to format the atlas image for rendering. Geometrically, there are two 
+/// equivalence classes of orientations possible for the atlas. Each origin
 /// represents one of the equivalence classes.
 #[derive(Copy, Clone, Debug, Eq, PartialEq, Serialize, Deserialize)]
 pub enum Origin {
-    /// The atlas image starts in the top left corner of the image, with the x-axis pointing right,
-    /// and the y-axis pointing down.
+    /// The atlas image starts in the top left corner of the image, with the x-axis 
+    /// pointing right, and the y-axis pointing down.
     TopLeft,
-    /// The atlas image starts in the bottom right corner of the image, with the x-axis pointing right,
-    /// and the y-axis pointing up.
+    /// The atlas image starts in the bottom right corner of the image, with the x-axis 
+    /// pointing right, and the y-axis pointing up.
     BottomLeft,
 }
 
-/// Possible warnings generated when parsing a texture image atlas. These include things that are not strictly 
-/// errors, but could degrade the performance of the texture atlas in graphics applications. The default case is
-/// that no warnings occurred.
+/// Possible warnings generated when parsing a texture image atlas. These include things 
+/// that are not strictly errors, but could degrade the performance of the texture atlas 
+/// in graphics applications. The default case is that no warnings occurred.
 #[derive(Copy, Clone, Debug, PartialEq, Eq)]
 pub enum TextureAtlas2DWarning {
     /// No warnings occurred.

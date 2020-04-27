@@ -541,7 +541,7 @@ fn load_image_from_reader<R: io::Read>(reader: R) -> Result<TextureImage2D, Text
         TextureAtlas2DError::new(kind, Some(Box::new(e)))
     })?;
 
-    let width_in_bytes = 4 * width;
+    let width_in_bytes = bytes_per_pixel * width;
     let half_height = height / 2;
     for row in 0..half_height {
         for col in 0..width_in_bytes {
@@ -618,10 +618,9 @@ pub fn to_writer<W: io::Write + io::Seek>(writer: W, atlas: &TextureAtlas2D) -> 
     // before writing it out. PNG images index start from the top left corner of
     // the image.
     let mut image = atlas.image().clone();
-    let origin = atlas.origin;
-    let height = atlas.height;
-    let width_in_bytes = 4 * atlas.width;
-    orient_image(&mut image.data, origin, height, width_in_bytes);
+    let bytes_per_pixel = atlas.color_type.bytes_per_pixel();
+    let width_in_bytes =  bytes_per_pixel * atlas.width;
+    orient_image(&mut image.data, atlas.origin, atlas.height, width_in_bytes);
 
     // Write out the atlas image.
     zip_file.start_file("atlas.png", options)?;

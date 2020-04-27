@@ -143,7 +143,7 @@ pub enum Origin {
 pub enum TextureAtlas2DWarning {
     /// No warnings occurred.
     NoWarnings,
-    /// The texture image dimensins are not a power of two. Texture image dimensions that
+    /// The texture image dimensions are not a power of two. Texture image dimensions that
     /// are a power of two are easier to index into for graphics hardware.
     TextureDimensionsAreNotAPowerOfTwo,
 }

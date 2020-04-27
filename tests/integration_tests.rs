@@ -53,14 +53,19 @@ fn atlas() -> TextureAtlas2D {
         0xFF0000FF, 0xFF0000FF, 0xFF0000FF, 0xFF0000FF, 0xFF0000FF, 0xFF0000FF, 0xFF0000FF, 0xFF0000FF, 0x00FF00FF, 0x00FF00FF, 0x00FF00FF, 0x00FF00FF, 0x00FF00FF, 0x00FF00FF, 0x00FF00FF, 0x00FF00FF,
     ]);
     let names = vec![format!("red"), format!("green"), format!("blue"), format!("black")];
-    let coordinate_charts = vec![
+    let bounding_boxes = vec![
         BoundingBoxPixelCoords { top_left: OffsetPixelCoords { u: 0, v: 15 }, width: texture_width, height: texture_height },
         BoundingBoxPixelCoords { top_left: OffsetPixelCoords { u: 8, v: 15 }, width: texture_width, height: texture_height },
         BoundingBoxPixelCoords { top_left: OffsetPixelCoords { u: 0, v:  7 }, width: texture_width, height: texture_height },
         BoundingBoxPixelCoords { top_left: OffsetPixelCoords { u: 8, v:  7 }, width: texture_width, height: texture_height },
     ];
+    let indices = vec![0, 1, 2, 3];
+    let atlas_entries = vec![
+        (indices[0], names[0].clone(), bounding_boxes[0]), (indices[1], names[1].clone(), bounding_boxes[1]), 
+        (indices[2], names[2].clone(), bounding_boxes[2]), (indices[3], names[3].clone(), bounding_boxes[3]),
+    ];
     
-    TextureAtlas2D::new(width, height, color_type, origin, names, coordinate_charts, data)
+    TextureAtlas2D::new(width, height, color_type, origin, atlas_entries, data)
 }
 
 /// The sample file exists.

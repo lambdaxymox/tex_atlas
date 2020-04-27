@@ -292,13 +292,28 @@ impl AtlasEntry {
 }
 
 #[derive(Serialize, Deserialize)]
+struct TextureAtlas2DSerializationEntry {
+    name: String,
+    bounding_box: BoundingBoxPixelCoords,
+}
+
+impl TextureAtlas2DSerializationEntry {
+    fn new(name: String, bounding_box: BoundingBoxPixelCoords) -> TextureAtlas2DSerializationEntry {
+        TextureAtlas2DSerializationEntry {
+            name: name,
+            bounding_box: bounding_box,
+        }
+    } 
+}
+
+#[derive(Serialize, Deserialize)]
 struct TextureAtlas2DSerialization {
     origin: Origin,
-    coordinate_charts: HashMap<String, BoundingBoxPixelCoords>,
+    coordinate_charts: HashMap<usize, TextureAtlas2DSerializationEntry>,
 }
 
 impl TextureAtlas2DSerialization {
-    fn new(origin: Origin, coordinate_charts: HashMap<String, BoundingBoxPixelCoords>) -> TextureAtlas2DSerialization {
+    fn new(origin: Origin, coordinate_charts: HashMap<usize, TextureAtlas2DSerializationEntry>) -> TextureAtlas2DSerialization {
         TextureAtlas2DSerialization {
             origin: origin,
             coordinate_charts: coordinate_charts,
@@ -315,35 +330,33 @@ pub struct TextureAtlas2D {
     pub color_type: ColorType,
     origin: Origin,
     names: HashMap<String, usize>,
-    bounding_boxes: Vec<AtlasEntry>,
+    bounding_boxes: HashMap<usize, AtlasEntry>,
     data: TextureImage2D,
 }
 
 impl TextureAtlas2D {
-    /// Construct a texture atlas.
+    /// Construct a new texture atlas.
     pub fn new(
         width: usize, height: usize, color_type: ColorType, origin: Origin, 
-        names: Vec<String>, pixel_offsets: Vec<BoundingBoxPixelCoords>, data: Vec<u8>) -> TextureAtlas2D {
+        entries: Vec<(usize, String, BoundingBoxPixelCoords)>, data: Vec<u8>) -> TextureAtlas2D {
         
         let image_data = TextureImage2D::new(width, height, color_type, data);
-        let mut bounding_boxes = vec![];
-        for i in 0..names.len() {
-            let name = &names[i];
-            let bounding_box_pix = pixel_offsets[i];
-            let top_left = bounding_box_pix.top_left;
-            let u = top_left.u as f32 / width as f32;
-            let v = top_left.v as f32 / height as f32;
-            let offset_tex = OffsetTexCoords::new(u, v);
-            let width_tex = bounding_box_pix.width as f32 / width as f32;
-            let height_tex = bounding_box_pix.height as f32 / height as f32;
-            let bounding_box_tex = BoundingBoxTexCoords::new(offset_tex, width_tex, height_tex);
-            let entry = AtlasEntry::new(name.clone(), bounding_box_tex, bounding_box_pix);
-            bounding_boxes.push(entry);
+        let mut bounding_boxes = HashMap::new();
+        for (i, name_i, bounding_box_pix_i) in entries.iter() {
+            let top_left_i = bounding_box_pix_i.top_left;
+            let u = top_left_i.u as f32 / width as f32;
+            let v = top_left_i.v as f32 / height as f32;
+            let offset_tex_i = OffsetTexCoords::new(u, v);
+            let width_tex_i = bounding_box_pix_i.width as f32 / width as f32;
+            let height_tex_i = bounding_box_pix_i.height as f32 / height as f32;
+            let bounding_box_tex_i = BoundingBoxTexCoords::new(offset_tex_i, width_tex_i, height_tex_i);
+            let atlas_entry = AtlasEntry::new(name_i.clone(), bounding_box_tex_i, *bounding_box_pix_i);
+            bounding_boxes.insert(*i, atlas_entry);
         }
 
         let mut tex_names = HashMap::new();
         for i in 0..bounding_boxes.len() {
-            let tex_name = bounding_boxes[i].name.clone();
+            let tex_name = bounding_boxes[&i].name.clone();
             tex_names.insert(tex_name, i);
         }
         
@@ -400,8 +413,9 @@ impl TextureAtlas2D {
         for name in self.names.keys() {
             let name_str = name.clone();
             let index = self.names[name.as_str()];
-            let bounding_box = self.bounding_boxes[index].bounding_box_pix;
-            coordinate_charts.insert(name_str, bounding_box);
+            let bounding_box = self.bounding_boxes[&index].bounding_box_pix;
+            let entry = TextureAtlas2DSerializationEntry::new(name_str, bounding_box);
+            coordinate_charts.insert(index, entry);
         }
 
         TextureAtlas2DSerialization::new(self.origin, coordinate_charts)
@@ -415,21 +429,21 @@ impl TextureAtlas2D {
 
     pub fn get_name(&self, name: &str) -> Option<BoundingBoxPixelCoords> {
         match self.names.get(name) {
-            Some(index) => Some(self.bounding_boxes[*index].bounding_box_pix),
+            Some(index) => Some(self.bounding_boxes[index].bounding_box_pix),
             None => None,
         }
     }
 
     pub fn get_name_uv(&self, name: &str) -> Option<BoundingBoxTexCoords> {
         match self.names.get(name) {
-            Some(index) => Some(self.bounding_boxes[*index].bounding_box_tex),
+            Some(index) => Some(self.bounding_boxes[index].bounding_box_tex),
             None => None,
         }
     }
 
     pub fn get_index(&self, index: usize) -> Option<BoundingBoxPixelCoords> {
         if index < self.bounding_boxes.len() {
-            Some(self.bounding_boxes[index].bounding_box_pix)
+            Some(self.bounding_boxes[&index].bounding_box_pix)
         } else {
             None
         }
@@ -437,7 +451,7 @@ impl TextureAtlas2D {
 
     pub fn get_index_uv(&self, index: usize) -> Option<BoundingBoxTexCoords> {
         if index < self.bounding_boxes.len() {
-            Some(self.bounding_boxes[index].bounding_box_tex)
+            Some(self.bounding_boxes[&index].bounding_box_tex)
         } else {
             None
         }
@@ -544,15 +558,14 @@ pub fn from_reader<R: io::Read + io::Seek>(reader: R) -> Result<TextureAtlas2DRe
     };
 
     let coordinate_charts = atlas_chart_data.coordinate_charts;
-    let names: Vec<String> = coordinate_charts.keys().map(|s| s.clone()).collect();
-    let mut pixel_offsets: Vec<BoundingBoxPixelCoords> = vec![];
-    for i in 0..names.len() {
-        pixel_offsets.push(coordinate_charts[&names[i]]);
+    let mut atlas_entries: Vec<(usize, String, BoundingBoxPixelCoords)> = vec![];
+    for (i, chart_i) in coordinate_charts.iter() {
+        atlas_entries.push((*i, chart_i.name.clone(), chart_i.bounding_box));
     }
 
     let color_type = tex_image.color_type;
     let origin = atlas_chart_data.origin;
-    let atlas = TextureAtlas2D::new(width, height, color_type, origin, names, pixel_offsets, tex_image.data);
+    let atlas = TextureAtlas2D::new(width, height, color_type, origin, atlas_entries, tex_image.data);
 
     Ok(TextureAtlas2DResult {
         atlas: atlas,

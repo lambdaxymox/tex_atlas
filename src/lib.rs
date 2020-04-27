@@ -347,7 +347,7 @@ pub struct TextureAtlas2D {
     pub channel_count: usize,
     pub bytes_per_pixel: usize,
     pub color_type: ColorType,
-    origin: Origin,
+    pub origin: Origin,
     names: HashMap<String, usize>,
     bounding_boxes: HashMap<usize, AtlasEntry>,
     data: TextureImage2D,

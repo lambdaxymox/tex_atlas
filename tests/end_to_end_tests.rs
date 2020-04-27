@@ -92,3 +92,18 @@ fn atlas_file_written_and_then_read_should_match_widths() {
     assert_eq!(result_width, expected_width);
 }
 
+/// Given a valid texture atlas, if we read it, write it to a new file, and read
+/// the new file back, we should get the same exact texture atlas back. That is, 
+/// give a texture atlas, reading and writing should satisfy the relation
+/// ```
+/// read(write(read(file1), file2)), file2) == read(file1).
+/// ```
+/// The origins of the atlases should match.
+#[test]
+fn atlas_file_written_and_then_read_should_match_origins() {
+    let test = read_write_test(SAMPLE_DATA);
+    let result_origin = test.result_atlas.origin;
+    let expected_origin = test.expected_atlas.origin;
+
+    assert_eq!(result_origin, expected_origin);
+}

@@ -41,7 +41,9 @@ impl ColorType {
 #[derive(Copy, Clone, Debug, PartialEq, Eq)]
 pub enum ErrorKind {
     UnrecognizedColorType,
-    CouldNotLoadImageBuffer,
+    CouldNotOpenTextureAtlas,
+    CouldNotLoadCoordinateCharts,
+    CouldNotLoadAtlasImageBuffer,
     Got32BitFloatingPointImageInsteadOfByteImage,
 }
 
@@ -51,8 +53,14 @@ impl fmt::Display for ErrorKind {
             ErrorKind::UnrecognizedColorType => {
                 write!(f, "{}", "The image buffer has an unrecognized color format.")
             }
-            ErrorKind::CouldNotLoadImageBuffer => {
+            ErrorKind::CouldNotLoadAtlasImageBuffer => {
                 write!(f, "{}", "Could not load image buffer.")
+            }
+            ErrorKind::CouldNotLoadCoordinateCharts => {
+                write!(f, "{}", "The atlas coordinate charts are invalid.")
+            }
+            ErrorKind::CouldNotOpenTextureAtlas => {
+                write!(f, "{}", "The texture atlas file could not be opened or parsed.")
             }
             ErrorKind::Got32BitFloatingPointImageInsteadOfByteImage => {
                 write!(f, "{}", "Tried to load an image as byte vectors, got 32 bit floating point image instead.")
@@ -396,10 +404,6 @@ impl TextureAtlas2D {
         self.data.len_bytes()
     }
 
-    fn image(&self) -> &TextureImage2D {
-        &self.data
-    }
-
     #[inline]
     pub fn as_ptr(&self) -> *const u8 {
         self.data.as_ptr()
@@ -415,21 +419,6 @@ impl TextureAtlas2D {
     #[inline]
     pub fn texture_count(&self) -> usize {
         self.names.len()
-    }
-
-    /// Get the collection of all bounding boxes for the textures inside the 
-    /// texture atlas.
-    fn coordinate_charts(&self) -> TextureAtlas2DSerialization {
-        let mut coordinate_charts = HashMap::new();
-        for name in self.names.keys() {
-            let name_str = name.clone();
-            let index = self.names[name.as_str()];
-            let bounding_box = self.bounding_boxes[&index].bounding_box_pix;
-            let entry = TextureAtlas2DSerializationEntry::new(name_str, bounding_box);
-            coordinate_charts.insert(index, entry);
-        }
-
-        TextureAtlas2DSerialization::new(self.origin, coordinate_charts)
     }
 
     /// Get the set of all texture names for the textures inside the 
@@ -471,6 +460,25 @@ impl TextureAtlas2D {
             None
         }
     }
+
+    /// Get the collection of all bounding boxes for the textures inside the 
+    /// texture atlas.
+    fn coordinate_charts(&self) -> TextureAtlas2DSerialization {
+        let mut coordinate_charts = HashMap::new();
+        for name in self.names.keys() {
+            let name_str = name.clone();
+            let index = self.names[name.as_str()];
+            let bounding_box = self.bounding_boxes[&index].bounding_box_pix;
+            let entry = TextureAtlas2DSerializationEntry::new(name_str, bounding_box);
+            coordinate_charts.insert(index, entry);
+        }
+
+        TextureAtlas2DSerialization::new(self.origin, coordinate_charts)
+    }
+
+    fn image(&self) -> &TextureImage2D {
+        &self.data
+    }
 }
 
 /// This type bundles together a texture atlas and any possible warnings generated
@@ -508,7 +516,7 @@ fn orient_image(image: &mut [u8], origin: Origin, height: usize, width_in_bytes:
 /// Load an atlas image file from a reader.
 fn load_image_from_reader<R: io::Read>(reader: R) -> Result<TextureImage2D, TextureAtlas2DError> {
     let png_reader = png::PngDecoder::new(reader).map_err(|e| {
-        let kind = ErrorKind::CouldNotLoadImageBuffer;
+        let kind = ErrorKind::CouldNotLoadAtlasImageBuffer;
         TextureAtlas2DError::new(kind, Some(Box::new(e)))
     })?;
     let (width, height) = png_reader.dimensions();
@@ -523,7 +531,7 @@ fn load_image_from_reader<R: io::Read>(reader: R) -> Result<TextureImage2D, Text
     let bytes_per_pixel = png_reader.color_type().bytes_per_pixel() as usize;
     let mut image_data: Vec<u8> = vec![0; width * height * bytes_per_pixel];
     png_reader.read_image(&mut image_data).map_err(|e| {
-        let kind = ErrorKind::CouldNotLoadImageBuffer;
+        let kind = ErrorKind::CouldNotLoadAtlasImageBuffer;
         TextureAtlas2DError::new(kind, Some(Box::new(e)))
     })?;
 
@@ -547,19 +555,19 @@ fn load_image_from_reader<R: io::Read>(reader: R) -> Result<TextureImage2D, Text
 /// and buffers in memory.
 pub fn from_reader<R: io::Read + io::Seek>(reader: R) -> Result<TextureAtlas2DResult, TextureAtlas2DError> {
     let mut zip_reader = zip::ZipArchive::new(reader).map_err(|e| {
-        let kind = ErrorKind::CouldNotLoadImageBuffer;
+        let kind = ErrorKind::CouldNotOpenTextureAtlas;
         TextureAtlas2DError::new(kind, Some(Box::new(e)))
     })?;
     let coordinate_charts_file = zip_reader.by_name("coordinate_charts.json").map_err(|e| {
-        let kind = ErrorKind::CouldNotLoadImageBuffer;
+        let kind = ErrorKind::CouldNotLoadCoordinateCharts;
         TextureAtlas2DError::new(kind, Some(Box::new(e)))
     })?;
     let atlas_chart_data: TextureAtlas2DSerialization = serde_json::from_reader(coordinate_charts_file).map_err(|e| {
-        let kind = ErrorKind::CouldNotLoadImageBuffer;
+        let kind = ErrorKind::CouldNotLoadCoordinateCharts;
         TextureAtlas2DError::new(kind, Some(Box::new(e)))
     })?;
     let image_file = zip_reader.by_name("atlas.png").map_err(|e| {
-        let kind = ErrorKind::CouldNotLoadImageBuffer;
+        let kind = ErrorKind::CouldNotLoadAtlasImageBuffer;
         TextureAtlas2DError::new(kind, Some(Box::new(e)))
     })?;
     let tex_image = load_image_from_reader(image_file)?;

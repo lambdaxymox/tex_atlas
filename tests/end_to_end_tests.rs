@@ -170,3 +170,23 @@ fn atlas_file_written_and_then_read_should_match_texture_counts() {
 
     assert_eq!(result_count, expected_count);
 }
+
+/// Given a valid texture atlas, if we read it, write it to a new file, and read
+/// the new file back, we should get the same exact texture atlas back. That is, 
+/// give a texture atlas, reading and writing should satisfy the relation
+/// ```
+/// read(write(read(file1), file2)), file2) == read(file1).
+/// ```
+/// The texture names should act as a primary key for the atlas: i.e., the 
+/// texture names and the associated textures should be preserved.
+#[test]
+fn atlas_file_written_and_then_read_should_preserve_texture_names() {
+    let test = read_write_test(SAMPLE_DATA);
+    let result_atlas = test.result_atlas;
+    let expected_atlas = test.expected_atlas;
+    for name in result_atlas.names().iter() {
+        let result = result_atlas.get_name(name);
+        let expected = expected_atlas.get_name(name);
+        assert_eq!(result, expected);
+    }
+}

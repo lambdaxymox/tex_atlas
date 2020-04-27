@@ -427,6 +427,12 @@ impl TextureAtlas2D {
         self.names.keys().map(|s| s.as_str()).collect()
     }
 
+    /// Get the set of all texture indices for the textures inside
+    /// the texture atlas.
+    pub fn indices(&self) -> Vec<usize> {
+        self.bounding_boxes.keys().map(|i| *i).collect()
+    }
+
     /// Get the bounding box in units of pixels for a texture by name.
     pub fn get_name(&self, name: &str) -> Option<BoundingBoxPixelCoords> {
         match self.names.get(name) {

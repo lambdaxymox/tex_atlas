@@ -224,11 +224,11 @@ impl OffsetTexCoords {
 #[derive(Copy, Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct BoundingBoxTexCoords {
     /// The position of the top left corner of the bounding box.
-    top_left: OffsetTexCoords,
+    pub top_left: OffsetTexCoords,
     /// The width of the bounding box.
-    width: f32,
+    pub width: f32,
     // The height of the bounding box.
-    height: f32,
+    pub height: f32,
 }
 
 impl BoundingBoxTexCoords {

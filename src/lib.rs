@@ -527,12 +527,6 @@ fn load_image_from_reader<R: io::Read>(reader: R) -> Result<TextureImage2D, Text
     Ok(tex_image)
 }
 
-/// Load a PNG texture image from a reader or buffer.
-fn load_image_from_memory(buffer: &[u8]) -> Result<TextureImage2D, TextureAtlas2DError> {
-    let reader = io::Cursor::new(buffer);
-    load_image_from_reader(reader)   
-}
-
 /// Load a PNG texture image from a file name.
 fn load_image_from_file<P: AsRef<Path>>(file_path: P) -> Result<TextureImage2D, TextureAtlas2DError> {
     let reader = File::open(file_path).map_err(|e| {
@@ -626,6 +620,12 @@ pub fn to_writer<W: io::Write + io::Seek>(writer: W, atlas: &TextureAtlas2D) -> 
     zip_file.finish()?;
 
     Ok(())
+}
+
+/// Load a texture atlas from a reader or buffer.
+pub fn load_from_memory(buffer: &[u8]) -> Result<TextureAtlas2DResult, TextureAtlas2DError> {
+    let reader = io::Cursor::new(buffer);
+    from_reader(reader)   
 }
 
 /// Load a texture atlas directly from a file.

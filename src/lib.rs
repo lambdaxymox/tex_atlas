@@ -14,25 +14,76 @@ use std::error;
 /// The color space represented by the underlying image data.
 #[derive(Copy, Clone, Debug, Eq, PartialEq)]
 pub enum ColorType {
+    /// Pixel is 8-bit luminance.
+    L8,
+    /// Pixel is 8-bit luminance with an alpha channel.
+    La8,
+    /// Pixel contains 8-bit R, G, and B channels.
+    Rgb8,
+    /// Pixel is an 8-bit RGB pixel with an 8-bit alpha channel.
     Rgba8,
+    /// Pixel is 16-bit luminance.
+    L16,
+    /// Pixel is 16-bit luminance with an alpha channel.
+    La16,
+    /// Pixel is 16-bit RGB.
+    Rgb16,
+    /// Pixel is 16-bit RGBA.
+    Rgba16,
+    /// Pixel contains 8-bit B, G, and R channels.
+    Bgr8,
+    /// Pixel is 8-bit BGR with an 8-bit alpha channel.
+    Bgra8,
+
 }
 
 impl ColorType {
     pub fn bytes_per_pixel(self) -> usize {
         match self {
+            ColorType::L8 => 1,
+            ColorType::L16 => 2,
+            ColorType::La8 => 2,
+            ColorType::Rgb8 => 3,
+            ColorType::Bgr8 => 3,
             ColorType::Rgba8 => 4,
+            ColorType::Bgra8 => 4,
+            ColorType::La16 => 4,
+            ColorType::Rgb16 => 6,
+            ColorType::Rgba16 => 8,
         }
     }
 
     pub fn channel_count(self) -> usize {
         match self {
+            ColorType::L8 => 1,
+            ColorType::L16 => 1,
+            ColorType::La8 => 2,
+            ColorType::Rgb8 => 3,
+            ColorType::Bgr8 => 3,
             ColorType::Rgba8 => 4,
+            ColorType::Bgra8 => 4,
+            ColorType::La16 => 2,
+            ColorType::Rgb16 => 3,
+            ColorType::Rgba16 => 4,
         }
     }
 
     pub fn bits_per_pixel(self) -> usize {
+        8 * self.bytes_per_pixel()
+    }
+
+    pub fn has_alpha_channel(self) -> bool {
         match self {
-            ColorType::Rgba8 => 32,
+            ColorType::L8 => false,
+            ColorType::L16 => false,
+            ColorType::La8 => true,
+            ColorType::Rgb8 => false,
+            ColorType::Bgr8 => false,
+            ColorType::Rgba8 => true,
+            ColorType::Bgra8 => true,
+            ColorType::La16 => true,
+            ColorType::Rgb16 => false,
+            ColorType::Rgba16 => true,
         }
     }
 }

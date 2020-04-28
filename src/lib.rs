@@ -281,6 +281,7 @@ impl From<BoundingBoxPixelCoords> for BoundingBoxCornersTexCoords {
         let width = bounding_box.width;
         let height = bounding_box.height;
         let top_left = bounding_box.top_left;
+        eprintln!("{} {}", top_left.v, height);
         let bottom_left = OffsetTexCoords::new(
             (top_left.u as f32) / (width as f32), ((top_left.v - height) as f32) / (height as f32)
         );

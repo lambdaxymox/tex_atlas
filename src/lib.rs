@@ -616,7 +616,7 @@ pub fn from_reader<R: io::Read + io::Seek>(reader: R) -> Result<TextureAtlas2DRe
         let kind = ErrorKind::CouldNotOpenTextureAtlas;
         TextureAtlas2DError::new(kind, Some(Box::new(e)))
     })?;
-    let coordinate_charts_file = zip_reader.by_name("coordinate_charts.json").map_err(|e| {
+    let coordinate_charts_file = zip_reader.by_name("atlas.json").map_err(|e| {
         let kind = ErrorKind::CouldNotLoadCoordinateCharts;
         TextureAtlas2DError::new(kind, Some(Box::new(e)))
     })?;
@@ -663,7 +663,7 @@ pub fn to_writer<W: io::Write + io::Seek>(writer: W, atlas: &TextureAtlas2D) -> 
         zip::write::FileOptions::default().compression_method(zip::CompressionMethod::Stored);
 
     // Write out the coordinate charts.
-    zip_file.start_file("coordinate_charts.json", options)?;
+    zip_file.start_file("atlas.json", options)?;
     serde_json::to_writer_pretty(&mut zip_file, &atlas.coordinate_charts())?;
 
     // if the origin is the bottom left of the image, we need to flip the image back over

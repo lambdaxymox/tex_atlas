@@ -282,13 +282,13 @@ impl From<BoundingBoxPixelCoords> for BoundingBoxCornersTexCoords {
         let height = bounding_box.height;
         let top_left = bounding_box.top_left;
         let bottom_left = OffsetTexCoords::new(
-            (top_left.u as f32) / (width as f32), ((top_left.v - height + 1) as f32) / (height as f32)
+            (top_left.u as f32) / (width as f32), ((top_left.v - height) as f32) / (height as f32)
         );
         let top_right = OffsetTexCoords::new(
-            ((top_left.u + width - 1) as f32) / (width as f32), (top_left.v as f32) / (height as f32)
+            ((top_left.u + width) as f32) / (width as f32), (top_left.v as f32) / (height as f32)
         );
         let bottom_right = OffsetTexCoords::new(
-            ((top_left.u + width - 1) as f32) / (width as f32), ((top_left.v - height + 1) as f32) / (height as f32)
+            ((top_left.u + width) as f32) / (width as f32), ((top_left.v - height) as f32) / (height as f32)
         );
         let top_left = OffsetTexCoords::new(
             top_left.u as f32 / width as f32, top_left.v as f32 / height as f32

@@ -211,6 +211,7 @@ pub struct OffsetTexCoords {
 }
 
 impl OffsetTexCoords {
+    #[inline]
     fn new(u: f32, v: f32) -> OffsetTexCoords {
         OffsetTexCoords {
             u: u,
@@ -232,11 +233,72 @@ pub struct BoundingBoxTexCoords {
 }
 
 impl BoundingBoxTexCoords {
+    #[inline]
     fn new(top_left: OffsetTexCoords, width: f32, height: f32) -> BoundingBoxTexCoords {
         BoundingBoxTexCoords {
             top_left: top_left,
             width: width,
             height: height,
+        }
+    }
+}
+
+/// The corners of a bounding box in the texture atlas. This is an equivalent 
+/// representation to the usual representation in terms of the top left 
+/// corner, the width, and the height of the bounding box.
+#[derive(Copy, Clone, Debug, PartialEq)]
+pub struct BoundingBoxCornersTexCoords {
+    /// The top left corner of th bounding box.
+    pub top_left: OffsetTexCoords,
+    /// The top right corner of the bounding box.
+    pub top_right: OffsetTexCoords,
+    /// The bottom left corner of the bounding box.
+    pub bottom_left: OffsetTexCoords,
+    /// The bottom right corner of the bounding box.
+    pub bottom_right: OffsetTexCoords,
+}
+
+impl From<BoundingBoxTexCoords> for BoundingBoxCornersTexCoords {
+    fn from(bounding_box: BoundingBoxTexCoords) -> BoundingBoxCornersTexCoords {
+        let width = bounding_box.width;
+        let height = bounding_box.height;
+        let top_left = bounding_box.top_left;
+        let bottom_left = OffsetTexCoords::new(top_left.u, top_left.v - height);
+        let top_right = OffsetTexCoords::new(top_left.u + width, top_left.v);
+        let bottom_right = OffsetTexCoords::new(top_left.u + width, top_left.v - height);
+
+        BoundingBoxCornersTexCoords {
+            top_left: top_left,
+            top_right: top_right,
+            bottom_left: bottom_left,
+            bottom_right: bottom_right,
+        }
+    }
+}
+
+impl From<BoundingBoxPixelCoords> for BoundingBoxCornersTexCoords {
+    fn from(bounding_box: BoundingBoxPixelCoords) -> BoundingBoxCornersTexCoords {
+        let width = bounding_box.width;
+        let height = bounding_box.height;
+        let top_left = bounding_box.top_left;
+        let bottom_left = OffsetTexCoords::new(
+            (top_left.u as f32) / (width as f32), ((top_left.v - height) as f32) / (height as f32)
+        );
+        let top_right = OffsetTexCoords::new(
+            ((top_left.u + width) as f32) / (width as f32), (top_left.v as f32) / (height as f32)
+        );
+        let bottom_right = OffsetTexCoords::new(
+            ((top_left.u + width) as f32) / (width as f32), ((top_left.v - height) as f32) / (height as f32)
+        );
+        let top_left = OffsetTexCoords::new(
+            top_left.u as f32 / width as f32, top_left.v as f32 / height as f32
+        );
+
+        BoundingBoxCornersTexCoords {
+            top_left: top_left,
+            top_right: top_right,
+            bottom_left: bottom_left,
+            bottom_right: bottom_right,
         }
     }
 }
@@ -252,6 +314,7 @@ pub struct OffsetPixelCoords {
 }
 
 impl OffsetPixelCoords {
+    #[inline]
     fn new(u: usize, v: usize) -> OffsetPixelCoords {
         OffsetPixelCoords {
             u: u,
@@ -271,6 +334,40 @@ pub struct BoundingBoxPixelCoords {
     /// The height in pixels of the bounding box.
     pub height: usize,
 }
+
+/// The corners of a bounding box in the texture atlas. This is an equivalent 
+/// representation to the usual representation in terms of the top left 
+/// corner, the width, and the height of the bounding box.
+#[derive(Copy, Clone, Debug, PartialEq, Eq)]
+pub struct BoundingBoxCornersPixelCoords {
+    /// The top left corner of the bounding box.
+    pub top_left: OffsetPixelCoords,
+    /// The top right corner of the bounding box.
+    pub top_right: OffsetPixelCoords,
+    /// The bottom left corner of the bounding box.
+    pub bottom_left: OffsetPixelCoords,
+    /// The bottom right corner of the bounding box.
+    pub bottom_right: OffsetPixelCoords,
+}
+
+impl From<BoundingBoxPixelCoords> for BoundingBoxCornersPixelCoords {
+    fn from(bounding_box: BoundingBoxPixelCoords) -> BoundingBoxCornersPixelCoords {
+        let width = bounding_box.width;
+        let height = bounding_box.height;
+        let top_left = bounding_box.top_left;
+        let bottom_left = OffsetPixelCoords::new(top_left.u, top_left.v - height);
+        let top_right = OffsetPixelCoords::new(top_left.u + width, top_left.v);
+        let bottom_right = OffsetPixelCoords::new(top_left.u + width, top_left.v - height);
+
+        BoundingBoxCornersPixelCoords {
+            top_left: top_left,
+            top_right: top_right,
+            bottom_left: bottom_left,
+            bottom_right: bottom_right,
+        }
+    }
+}
+
 
 impl BoundingBoxPixelCoords {
     fn new(top_left: OffsetPixelCoords, width: usize, height: usize) -> BoundingBoxPixelCoords {

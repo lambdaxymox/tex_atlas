@@ -99,8 +99,8 @@ fn atlas_file_written_and_then_read_should_match_widths() {
 #[test]
 fn atlas_file_written_and_then_read_should_match_origins() {
     let test = read_write_test(SAMPLE_DATA);
-    let result_origin = test.result_atlas.origin;
-    let expected_origin = test.expected_atlas.origin;
+    let result_origin = test.result_atlas.origin();
+    let expected_origin = test.expected_atlas.origin();
 
     assert_eq!(result_origin, expected_origin);
 }

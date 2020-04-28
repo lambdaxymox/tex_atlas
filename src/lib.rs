@@ -258,51 +258,6 @@ pub struct BoundingBoxCornersTexCoords {
     pub bottom_right: OffsetTexCoords,
 }
 
-impl From<BoundingBoxTexCoords> for BoundingBoxCornersTexCoords {
-    fn from(bounding_box: BoundingBoxTexCoords) -> BoundingBoxCornersTexCoords {
-        let width = bounding_box.width;
-        let height = bounding_box.height;
-        let top_left = bounding_box.top_left;
-        let bottom_left = OffsetTexCoords::new(top_left.u, top_left.v - height);
-        let top_right = OffsetTexCoords::new(top_left.u + width, top_left.v);
-        let bottom_right = OffsetTexCoords::new(top_left.u + width, top_left.v - height);
-
-        BoundingBoxCornersTexCoords {
-            top_left: top_left,
-            top_right: top_right,
-            bottom_left: bottom_left,
-            bottom_right: bottom_right,
-        }
-    }
-}
-
-impl From<BoundingBoxPixelCoords> for BoundingBoxCornersTexCoords {
-    fn from(bounding_box: BoundingBoxPixelCoords) -> BoundingBoxCornersTexCoords {
-        let width = bounding_box.width;
-        let height = bounding_box.height;
-        let top_left = bounding_box.top_left;
-        let bottom_left = OffsetTexCoords::new(
-            (top_left.u as f32) / (width as f32), ((top_left.v - height) as f32) / (height as f32)
-        );
-        let top_right = OffsetTexCoords::new(
-            ((top_left.u + width) as f32) / (width as f32), (top_left.v as f32) / (height as f32)
-        );
-        let bottom_right = OffsetTexCoords::new(
-            ((top_left.u + width) as f32) / (width as f32), ((top_left.v - height) as f32) / (height as f32)
-        );
-        let top_left = OffsetTexCoords::new(
-            top_left.u as f32 / width as f32, top_left.v as f32 / height as f32
-        );
-
-        BoundingBoxCornersTexCoords {
-            top_left: top_left,
-            top_right: top_right,
-            bottom_left: bottom_left,
-            bottom_right: bottom_right,
-        }
-    }
-}
-
 /// The position of the top left corner of the bounding box in
 /// terms of the raw pixel position in the underlying image array.
 #[derive(Copy, Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
@@ -349,25 +304,6 @@ pub struct BoundingBoxCornersPixelCoords {
     /// The bottom right corner of the bounding box.
     pub bottom_right: OffsetPixelCoords,
 }
-
-impl From<BoundingBoxPixelCoords> for BoundingBoxCornersPixelCoords {
-    fn from(bounding_box: BoundingBoxPixelCoords) -> BoundingBoxCornersPixelCoords {
-        let width = bounding_box.width;
-        let height = bounding_box.height;
-        let top_left = bounding_box.top_left;
-        let bottom_left = OffsetPixelCoords::new(top_left.u, top_left.v - height);
-        let top_right = OffsetPixelCoords::new(top_left.u + width, top_left.v);
-        let bottom_right = OffsetPixelCoords::new(top_left.u + width, top_left.v - height);
-
-        BoundingBoxCornersPixelCoords {
-            top_left: top_left,
-            top_right: top_right,
-            bottom_left: bottom_left,
-            bottom_right: bottom_right,
-        }
-    }
-}
-
 
 impl BoundingBoxPixelCoords {
     fn new(top_left: OffsetPixelCoords, width: usize, height: usize) -> BoundingBoxPixelCoords {
@@ -496,7 +432,7 @@ pub struct TextureAtlas2D {
     pub channel_count: usize,
     pub bytes_per_pixel: usize,
     pub color_type: ColorType,
-    pub origin: Origin,
+    origin: Origin,
     names: HashMap<String, usize>,
     bounding_boxes: HashMap<usize, AtlasEntry>,
     data: TextureImage2D,
@@ -570,6 +506,12 @@ impl TextureAtlas2D {
         self.names.len()
     }
 
+    /// Get the position of the origin in the texture atlas.
+    #[inline]
+    pub fn origin(&self) -> Origin {
+        self.origin
+    }
+
     /// Get the set of all texture names for the textures inside the 
     /// texture atlas.
     pub fn names(&self) -> Vec<&str> {
@@ -614,6 +556,100 @@ impl TextureAtlas2D {
         } else {
             None
         }
+    }
+
+    pub fn get_index_corners(&self, index: usize) -> Option<BoundingBoxCornersPixelCoords> {
+        self.get_index(index).map(|bounding_box| {
+            let width = bounding_box.width;
+            let height = bounding_box.height;
+            let top_left = bounding_box.top_left;
+            let bottom_left = OffsetPixelCoords::new(top_left.u, top_left.v - height);
+            let top_right = OffsetPixelCoords::new(top_left.u + width, top_left.v);
+            let bottom_right = OffsetPixelCoords::new(top_left.u + width, top_left.v - height);
+    
+            BoundingBoxCornersPixelCoords {
+                top_left: top_left,
+                top_right: top_right,
+                bottom_left: bottom_left,
+                bottom_right: bottom_right,
+            }
+        })
+    }
+
+    pub fn get_index_corners_uv(&self, index: usize) -> Option<BoundingBoxCornersTexCoords> {
+        self.get_index(index).map(|bounding_box| {
+            let atlas_width = self.width;
+            let atlas_height = self.height;
+            let width = bounding_box.width;
+            let height = bounding_box.height;
+            let top_left = bounding_box.top_left;
+            let bottom_left = OffsetTexCoords::new(
+                (top_left.u as f32) / (atlas_width as f32), ((top_left.v - height) as f32) / (atlas_height as f32)
+            );
+            let top_right = OffsetTexCoords::new(
+                ((top_left.u + width) as f32) / (atlas_width as f32), (top_left.v as f32) / (atlas_height as f32)
+            );
+            let bottom_right = OffsetTexCoords::new(
+                ((top_left.u + width) as f32) / (atlas_width as f32), ((top_left.v - height) as f32) / (atlas_height as f32)
+            );
+            let top_left = OffsetTexCoords::new(
+                top_left.u as f32 / atlas_width as f32, top_left.v as f32 / atlas_height as f32
+            );
+    
+            BoundingBoxCornersTexCoords {
+                top_left: top_left,
+                top_right: top_right,
+                bottom_left: bottom_left,
+                bottom_right: bottom_right,
+            }
+        })
+    }
+
+    pub fn get_name_corners(&self, name: &str) -> Option<BoundingBoxCornersPixelCoords> {
+        self.get_name(name).map(|bounding_box| {
+            let width = bounding_box.width;
+            let height = bounding_box.height;
+            let top_left = bounding_box.top_left;
+            let bottom_left = OffsetPixelCoords::new(top_left.u, top_left.v - height);
+            let top_right = OffsetPixelCoords::new(top_left.u + width, top_left.v);
+            let bottom_right = OffsetPixelCoords::new(top_left.u + width, top_left.v - height);
+    
+            BoundingBoxCornersPixelCoords {
+                top_left: top_left,
+                top_right: top_right,
+                bottom_left: bottom_left,
+                bottom_right: bottom_right,
+            }
+        })
+    }
+
+    pub fn get_name_corners_uv(&self, name: &str) -> Option<BoundingBoxCornersTexCoords> {
+        self.get_name(name).map(|bounding_box| {
+            let atlas_width = self.width;
+            let atlas_height = self.height;
+            let width = bounding_box.width;
+            let height = bounding_box.height;
+            let top_left = bounding_box.top_left;
+            let bottom_left = OffsetTexCoords::new(
+                (top_left.u as f32) / (atlas_width as f32), ((top_left.v - height) as f32) / (atlas_height as f32)
+            );
+            let top_right = OffsetTexCoords::new(
+                ((top_left.u + width) as f32) / (atlas_width as f32), (top_left.v as f32) / (atlas_height as f32)
+            );
+            let bottom_right = OffsetTexCoords::new(
+                ((top_left.u + width) as f32) / (atlas_width as f32), ((top_left.v - height) as f32) / (atlas_height as f32)
+            );
+            let top_left = OffsetTexCoords::new(
+                top_left.u as f32 / atlas_width as f32, top_left.v as f32 / atlas_height as f32
+            );
+    
+            BoundingBoxCornersTexCoords {
+                top_left: top_left,
+                top_right: top_right,
+                bottom_left: bottom_left,
+                bottom_right: bottom_right,
+            }
+        })
     }
 
     /// Get the collection of all bounding boxes for the textures inside the 

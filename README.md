@@ -1,6 +1,6 @@
 # Texture Atlas Library
 This software repository is a library for working with texture atlases. It is a library for working with 
-the TexuteAtlas2D image format (defined by this library) for loading two-dimensional texture atlases 
+the `TexureAtlas2D` image format (defined by this library) for loading two-dimensional texture atlases 
 in computer graphics and game programming applications.
 
 # Usage

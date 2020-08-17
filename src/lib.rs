@@ -38,6 +38,7 @@ pub enum ColorType {
 }
 
 impl ColorType {
+    #[inline]
     pub fn bytes_per_pixel(self) -> usize {
         match self {
             ColorType::L8 => 1,
@@ -53,6 +54,7 @@ impl ColorType {
         }
     }
 
+    #[inline]
     pub fn channel_count(self) -> usize {
         match self {
             ColorType::L8 => 1,
@@ -68,10 +70,12 @@ impl ColorType {
         }
     }
 
+    #[inline]
     pub fn bits_per_pixel(self) -> usize {
         8 * self.bytes_per_pixel()
     }
 
+    #[inline]
     pub fn has_alpha_channel(self) -> bool {
         match self {
             ColorType::L8 => false,
@@ -345,10 +349,12 @@ impl TextureImage2D {
         }
     }
 
+    #[inline]
     fn len_pixels(&self) -> usize {
         self.width * self.height
     }
 
+    #[inline]
     fn len_bytes(&self) -> usize {
         self.data.len()
     }

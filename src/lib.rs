@@ -385,6 +385,7 @@ struct AtlasEntry {
 }
 
 impl AtlasEntry {
+    /// Construct a new atlas entry.
     fn new(name: String, 
         bounding_box_tex: BoundingBoxTexCoords, 
         bounding_box_pix: BoundingBoxPixelCoords) -> AtlasEntry {
@@ -685,6 +686,45 @@ impl TextureAtlas2D {
 
     fn image(&self) -> &TextureImage2D {
         &self.data
+    }
+}
+
+/// A data structure storing a collection of texture atlases. In a multi-texture atlas we denote
+/// each atlas as a page.
+#[derive(Clone, Debug)]
+pub struct MultiTextureAtlas2D {
+    /// The set of texture atlases.
+    pages: Vec<TextureAtlas2D>,
+    /// The names of each texture atlas in the multi-texture atlas.
+    page_names: HashMap<String, usize>,
+}
+
+impl MultiTextureAtlas2D {
+    /// Construct a new multi-texture atlas. 
+    pub fn new(pages: Vec<TextureAtlas2D>, names: Vec<String>) -> MultiTextureAtlas2D {
+        let mut page_names = HashMap::new();
+        for i in 0..names.len() {
+            page_names.insert(names[i].clone(), i);
+        }
+
+        MultiTextureAtlas2D {
+            pages: pages,
+            page_names: page_names,
+        }
+    }
+
+    /// Get all the pages in the multi-texture atlas.
+    pub fn get_pages(&self) -> &[TextureAtlas2D] {
+        &self.pages
+    }
+
+    /// Get a texture atlas by its name.
+    pub fn get_page_by_name(&self, name: &str) -> Option<&TextureAtlas2D> {
+        if let Some(index) = self.page_names.get(name) {
+            return Some(&self.pages[*index]);
+        }
+
+        None
     }
 }
 

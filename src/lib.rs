@@ -746,8 +746,7 @@ impl TextureAtlas2DResult {
     }
 }
 
-/// Orient the texture atlas image depending on the 
-/// position of the origin.
+/// Orient the texture atlas image depending on the position of the origin.
 fn orient_image(image: &mut [u8], origin: Origin, height: usize, width_in_bytes: usize) {
     if origin == Origin::BottomLeft {
         let half_height = height / 2;
@@ -799,7 +798,7 @@ fn load_image_from_reader<R: io::Read>(reader: R) -> Result<TextureImage2D, Text
 }
 
 
-/// Load a texture atlas from any endpoint that can be read from. This include files
+/// Load a texture atlas from any endpoint that can be read from. This primarily includes files
 /// and buffers in memory.
 pub fn from_reader<R: io::Read + io::Seek>(reader: R) -> Result<TextureAtlas2DResult, TextureAtlas2DError> {
     let mut zip_reader = zip::ZipArchive::new(reader).map_err(|e| {
@@ -867,9 +866,12 @@ pub fn to_writer<W: io::Write + io::Seek>(writer: W, atlas: &TextureAtlas2D) -> 
     // Write out the atlas image.
     zip_file.start_file("atlas.png", options)?;
     let png_writer = png::PNGEncoder::new(&mut zip_file);
-    png_writer.encode(
-        image.as_bytes(), atlas.width as u32, atlas.height as u32, image::ColorType::Rgba8
-    ).map_err(|e| io::Error::new(io::ErrorKind::Other, Box::new(e)))?;
+    let height = atlas.height as u32;
+    let width = atlas.width as u32;
+    let color = image::ColorType::Rgba8;
+    png_writer.encode(image.as_bytes(), width, height, color).map_err(
+        |e| io::Error::new(io::ErrorKind::Other, Box::new(e))
+    )?;
 
     zip_file.finish()?;
 

@@ -431,16 +431,26 @@ impl TextureAtlas2DSerialization {
     }
 }
 
+/// A data structure representing all the data for a texture atlas.
 #[derive(Clone, Debug)]
 pub struct TextureAtlas2D {
+    /// The width of the texture atlas in pixels.
     pub width: usize,
+    /// The height of the texture atlas in pixel.
     pub height: usize,
+    /// The number of channels per pixel.
     pub channel_count: usize,
+    /// The number of bytes per pixel.
     pub bytes_per_pixel: usize,
+    /// The color space of the atlas image.
     pub color_type: ColorType,
+    /// The origin in the atlas image for orienting the texture.
     origin: Origin,
+    /// The table of texture names.
     names: HashMap<String, usize>,
+    /// The bounding boxes for each texture in the texture atlas.
     bounding_boxes: HashMap<usize, AtlasEntry>,
+    /// The underlying texture image.
     data: TextureImage2D,
 }
 
@@ -690,7 +700,8 @@ pub struct TextureAtlas2DResult {
 }
 
 impl TextureAtlas2DResult {
-    pub fn has_no_warnings(&self) -> bool {
+    /// Check that no warnings were generated during the loading of a texture atlas.
+    pub fn no_warnings_generated(&self) -> bool {
         self.warnings == TextureAtlas2DWarning::NoWarnings
     }
 }

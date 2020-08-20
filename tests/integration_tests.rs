@@ -114,7 +114,7 @@ fn load_file_yields_correct_width() {
     let expected = multi_atlas();
     for page_name in result.page_names() {
         let result_page = result.by_page_name(page_name).unwrap();
-        let expected_page = result.by_page_name(page_name).unwrap();
+        let expected_page = expected.by_page_name(page_name).unwrap();
 
         assert_eq!(result_page.width, expected_page.width);
     }
@@ -127,7 +127,7 @@ fn load_file_yields_correct_height() {
     let expected = multi_atlas();
     for page_name in result.page_names() {
         let result_page = result.by_page_name(page_name).unwrap();
-        let expected_page = result.by_page_name(page_name).unwrap();
+        let expected_page = expected.by_page_name(page_name).unwrap();
 
         assert_eq!(result_page.height, expected_page.height);
     }
@@ -140,7 +140,7 @@ fn load_file_yields_correct_pixel_channel_count() {
     let expected = multi_atlas();
     for page_name in result.page_names() {
         let result_page = result.by_page_name(page_name).unwrap();
-        let expected_page = result.by_page_name(page_name).unwrap();
+        let expected_page = expected.by_page_name(page_name).unwrap();
 
         assert_eq!(result_page.channel_count, expected_page.channel_count);
     }
@@ -151,9 +151,9 @@ fn load_file_yields_correct_pixel_channel_count() {
 fn load_file_yields_correct_pixel_count() {
     let result = tex_atlas::load_file(SAMPLE_DATA).unwrap().multi_atlas;
     let expected = multi_atlas();
-    for page_name in result.page_names() {
+    for page_name in expected.page_names() {
         let result_page = result.by_page_name(page_name).unwrap();
-        let expected_page = result.by_page_name(page_name).unwrap();
+        let expected_page = expected.by_page_name(page_name).unwrap();
 
         assert_eq!(result_page.len_pixels(), expected_page.len_pixels());
     }
@@ -257,9 +257,11 @@ fn resulting_texture_atlas_entries_match_expected_atlas_entries_by_name() {
     let result_multi_atlas = tex_atlas::load_file(SAMPLE_DATA).unwrap().multi_atlas;
     let expected_multi_atlas = multi_atlas();
     for page in expected_multi_atlas.pages() {
+        let page_name = page.atlas_name();
+        let result_page = result_multi_atlas.by_page_name(page_name).unwrap();
         for texture_name in page.texture_names() {
             let expected = page.by_texture_name(texture_name);
-            let result = page.by_texture_name(texture_name);
+            let result = result_page.by_texture_name(texture_name);
             assert_eq!(result, expected);
         }
     }

@@ -883,8 +883,38 @@ fn extract_atlas_names<R: io::Read + io::Seek>(zip_reader: &ZipArchive<R>) -> (V
     let mut atlas_names = vec![];
     let mut atlases_missing_coordinates = vec![];
     let mut atlases_missing_images = vec![];
-    let mut file_list = zip_reader.file_names().collect::<Vec<&str>>();
-    file_list.sort();
+    let mut file_names = zip_reader
+        .file_names()
+        .filter(|file_name| file_name.ends_with(".json") || file_name.ends_with(".png"))
+        .collect::<Vec<&str>>();
+    file_names.sort();
+
+    let mut i = 0;
+    while i < file_names.len() {
+        if file_names[i].ends_with(".json") && file_names[i + 1].ends_with(".png") {
+            // The atlas contains both the coordinate chart file and the atlas image file.
+            let length = file_names[i].len() - 5;
+            let atlas_name = String::from(&file_names[i][..length]);
+            atlas_names.push(atlas_name);
+            i += 2;
+        } else if file_names[i].ends_with(".json") && !file_names[i + i].ends_with(".png") {
+            // The atlas has the coordinate chart file but lacks the atlas image file.
+            let length = file_names[i].len() - 5;
+            let atlas_name = String::from(&file_names[i][..length]);
+            atlases_missing_images.push(atlas_name);
+            i += 1;
+        } else if !file_names[i].ends_with(".json") && file_names[i + i].ends_with(".png") {
+            // The atlas lacks the coordinate chart but has the atlas image file.
+            let length = file_names[i].len() - 4;
+            let atlas_name = String::from(&file_names[i][..length]);
+            atlases_missing_coordinates.push(atlas_name);
+            i += 1;
+        } else {
+            // We should not get here. The code before the loop that filtered and sorted the file list 
+            // should have taken care of this.
+            i += 1;
+        }
+    }
 
     (atlas_names, atlases_missing_coordinates, atlases_missing_images)
 }

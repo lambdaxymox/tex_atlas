@@ -1,6 +1,6 @@
 [package]
 name = "tex_atlas"
-version = "0.1.31"
+version = "0.1.32"
 authors = ["LambdaXymox <lambda.xymox@gmail.com>"]
 edition = "2018"
 description = "A crate defining a file format for storing texture atlases into a single file for efficient manipulation by graphics hardware."

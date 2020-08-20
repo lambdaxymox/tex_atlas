@@ -572,7 +572,7 @@ impl TextureAtlas2D {
     }
 
     /// Get the bounding box in units of pixels for a texture by name.
-    pub fn get_texture_name(&self, name: &str) -> Option<BoundingBoxPixelCoords> {
+    pub fn by_texture_name(&self, name: &str) -> Option<BoundingBoxPixelCoords> {
         match self.texture_names.get(name) {
             Some(index) => Some(self.bounding_boxes[index].bounding_box_pix),
             None => None,
@@ -580,7 +580,7 @@ impl TextureAtlas2D {
     }
 
     /// Get the bounding box in units of the unit square for a texture by name.
-    pub fn get_texture_name_uv(&self, name: &str) -> Option<BoundingBoxTexCoords> {
+    pub fn by_texture_name_uv(&self, name: &str) -> Option<BoundingBoxTexCoords> {
         match self.texture_names.get(name) {
             Some(index) => Some(self.bounding_boxes[index].bounding_box_tex),
             None => None,
@@ -588,7 +588,7 @@ impl TextureAtlas2D {
     }
 
     /// Get the bounding box in units of pixels for a texture by index.
-    pub fn get_index(&self, index: usize) -> Option<BoundingBoxPixelCoords> {
+    pub fn by_index(&self, index: usize) -> Option<BoundingBoxPixelCoords> {
         if index < self.bounding_boxes.len() {
             Some(self.bounding_boxes[&index].bounding_box_pix)
         } else {
@@ -597,7 +597,7 @@ impl TextureAtlas2D {
     }
 
     /// Get the bounding box in units of the unit square for a texture by index.
-    pub fn get_index_uv(&self, index: usize) -> Option<BoundingBoxTexCoords> {
+    pub fn by_index_uv(&self, index: usize) -> Option<BoundingBoxTexCoords> {
         if index < self.bounding_boxes.len() {
             Some(self.bounding_boxes[&index].bounding_box_tex)
         } else {
@@ -606,8 +606,8 @@ impl TextureAtlas2D {
     }
 
     /// Get the bounding box in units of pixels for a given texture by index.
-    pub fn get_index_corners(&self, index: usize) -> Option<BoundingBoxCornersPixelCoords> {
-        self.get_index(index).map(|bounding_box| {
+    pub fn by_index_corners(&self, index: usize) -> Option<BoundingBoxCornersPixelCoords> {
+        self.by_index(index).map(|bounding_box| {
             let width = bounding_box.width;
             let height = bounding_box.height;
             let top_left = bounding_box.top_left;
@@ -625,8 +625,8 @@ impl TextureAtlas2D {
     }
 
     /// Get the bounding box in units of the unit square for a given texture by index.
-    pub fn get_index_corners_uv(&self, index: usize) -> Option<BoundingBoxCornersTexCoords> {
-        self.get_index(index).map(|bounding_box| {
+    pub fn by_index_corners_uv(&self, index: usize) -> Option<BoundingBoxCornersTexCoords> {
+        self.by_index(index).map(|bounding_box| {
             let atlas_width = self.width;
             let atlas_height = self.height;
             let width = bounding_box.width;
@@ -655,8 +655,8 @@ impl TextureAtlas2D {
     }
 
     /// Get the bounding box in units of pixels for a given texture by name.
-    pub fn get_texture_name_corners(&self, name: &str) -> Option<BoundingBoxCornersPixelCoords> {
-        self.get_texture_name(name).map(|bounding_box| {
+    pub fn by_texture_name_corners(&self, name: &str) -> Option<BoundingBoxCornersPixelCoords> {
+        self.by_texture_name(name).map(|bounding_box| {
             let width = bounding_box.width;
             let height = bounding_box.height;
             let top_left = bounding_box.top_left;
@@ -674,8 +674,8 @@ impl TextureAtlas2D {
     }
 
     /// Get the bounding box in units of the unit square for a given texture by name.
-    pub fn get_texture_name_corners_uv(&self, name: &str) -> Option<BoundingBoxCornersTexCoords> {
-        self.get_texture_name(name).map(|bounding_box| {
+    pub fn by_texture_name_corners_uv(&self, name: &str) -> Option<BoundingBoxCornersTexCoords> {
+        self.by_texture_name(name).map(|bounding_box| {
             let atlas_width = self.width;
             let atlas_height = self.height;
             let width = bounding_box.width;
@@ -748,17 +748,39 @@ impl MultiTextureAtlas2D {
     }
 
     /// Get all the pages in the multi-texture atlas.
-    pub fn get_pages(&self) -> &[TextureAtlas2D] {
+    #[inline]
+    pub fn pages(&self) -> &[TextureAtlas2D] {
         &self.pages
     }
 
     /// Get a texture atlas by its name.
-    pub fn get_page_by_name(&self, name: &str) -> Option<&TextureAtlas2D> {
+    pub fn by_page_name(&self, name: &str) -> Option<&TextureAtlas2D> {
         if let Some(index) = self.page_names.get(name) {
             return Some(&self.pages[*index]);
         }
 
         None
+    }
+
+    /// Get a texture atlas by its index.
+    pub fn by_page_index(&self, index: usize) -> Option<&TextureAtlas2D> {
+        if index <= self.pages.len() {
+            Some(&self.pages[index])
+        } else {
+            None
+        }
+    }
+
+    /// Get the number of pages (atlases) in the multi texture atlas.
+    #[inline]
+    pub fn page_count(&self) -> usize {
+        self.pages.len()
+    }
+
+    /// Get the names of the texture atlases in the multi texture atlas.
+    #[inline]
+    pub fn page_names(&self) -> impl Iterator<Item = &str> {
+        self.page_names.keys().map(|s| s.as_str())
     }
 }
 
@@ -781,8 +803,8 @@ impl TextureAtlas2DResult {
 }
 
 pub struct MultiTextureAtlas2DResult {
-    multi_atlas: MultiTextureAtlas2D,
-    warnings: Vec<TextureAtlas2DWarning>,
+    pub multi_atlas: MultiTextureAtlas2D,
+    pub warnings: Vec<TextureAtlas2DWarning>,
 }
 
 /// Orient the texture atlas image depending on the position of the origin.

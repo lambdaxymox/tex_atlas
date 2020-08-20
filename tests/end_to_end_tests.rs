@@ -14,16 +14,16 @@ fn loading_a_nonexistent_atlas_file_should_fail() {
     let path = Path::new("DoesNotExist.atlas");
     assert!(!path.exists());
 
-    let maybe_atlas = tex_atlas::load_file(path);
-    assert!(maybe_atlas.is_err());
+    let maybe_multi_atlas = tex_atlas::load_file(path);
+    assert!(maybe_multi_atlas.is_err());
 }
 
 /// Given a valid atlas file, we should be able to write it to storage.
 #[test]
 fn atlas_file_should_write_to_storage_successfully() {
-    let atlas = tex_atlas::load_file(SAMPLE_DATA).unwrap().atlas;
+    let multi_atlas = tex_atlas::load_file(SAMPLE_DATA).unwrap().multi_atlas;
     let path = Path::new("test.atlas");
-    let result = tex_atlas::write_to_file(path, &atlas);
+    let result = tex_atlas::write_to_file(path, &multi_atlas);
     fs::remove_file(path).unwrap();
 
     assert!(result.is_ok());
@@ -31,30 +31,30 @@ fn atlas_file_should_write_to_storage_successfully() {
 
 
 struct ReadWriteTest {
-    expected_atlas: tex_atlas::TextureAtlas2D,
-    result_atlas: tex_atlas::TextureAtlas2D,
+    expected_multi_atlas: tex_atlas::MultiTextureAtlas2D,
+    result_multi_atlas: tex_atlas::MultiTextureAtlas2D,
 }
 
 impl ReadWriteTest {
     fn new(
-        expected_atlas: tex_atlas::TextureAtlas2D,
-        result_atlas: tex_atlas::TextureAtlas2D) -> ReadWriteTest {
+        expected_multi_atlas: tex_atlas::MultiTextureAtlas2D,
+        result_multi_atlas: tex_atlas::MultiTextureAtlas2D) -> ReadWriteTest {
 
         ReadWriteTest {
-            expected_atlas: expected_atlas,
-            result_atlas: result_atlas,
+            expected_multi_atlas: expected_multi_atlas,
+            result_multi_atlas: result_multi_atlas,
         }
     }
 }
 
 fn read_write_test<P: AsRef<Path>>(expected_path: P) -> ReadWriteTest {
-    let expected_atlas = tex_atlas::load_file(&expected_path).unwrap().atlas;
+    let expected_multi_atlas = tex_atlas::load_file(&expected_path).unwrap().multi_atlas;
     let buffer = vec![];
     let mut cursor = io::Cursor::new(buffer);
-    tex_atlas::to_writer(&mut cursor, &expected_atlas).unwrap();
-    let result_atlas = tex_atlas::from_reader(&mut cursor).unwrap().atlas;
+    tex_atlas::to_writer(&mut cursor, &expected_multi_atlas).unwrap();
+    let result_multi_atlas = tex_atlas::from_reader(&mut cursor).unwrap().multi_atlas;
 
-    ReadWriteTest::new(expected_atlas, result_atlas)
+    ReadWriteTest::new(expected_multi_atlas, result_multi_atlas)
 }
 
 /// Given a valid texture atlas, if we read it, write it to a new file, and read
@@ -67,15 +67,15 @@ fn read_write_test<P: AsRef<Path>>(expected_path: P) -> ReadWriteTest {
 #[test]
 fn atlas_file_written_and_then_read_should_match_heights() {
     let test = read_write_test(SAMPLE_DATA);
-    let result_height = test.result_atlas.height;
-    let expected_height = test.expected_atlas.height;
+    let result_height = test.result_multi_atlas.height;
+    let expected_height = test.expected_multi_atlas.height;
 
     assert_eq!(result_height, expected_height);
 }
 
-/// Given a valid texture atlas, if we read it, write it to a new file, and read
+/// Given a valid multi texture atlas, if we read it, write it to a new file, and read
 /// the new file back, we should get the same exact texture atlas back. That is, 
-/// give a texture atlas, reading and writing should satisfy the relation
+/// given a multi texture atlas, reading and writing should satisfy the relation
 /// ```
 /// read(write(read(file1), file2)), file2) == read(file1).
 /// ```
@@ -83,8 +83,8 @@ fn atlas_file_written_and_then_read_should_match_heights() {
 #[test]
 fn atlas_file_written_and_then_read_should_match_widths() {
     let test = read_write_test(SAMPLE_DATA);
-    let result_width = test.result_atlas.width;
-    let expected_width = test.expected_atlas.width;
+    let result_width = test.result_multi_atlas.width;
+    let expected_width = test.expected_multi_atlas.width;
 
     assert_eq!(result_width, expected_width);
 }
@@ -99,8 +99,8 @@ fn atlas_file_written_and_then_read_should_match_widths() {
 #[test]
 fn atlas_file_written_and_then_read_should_match_origins() {
     let test = read_write_test(SAMPLE_DATA);
-    let result_origin = test.result_atlas.origin();
-    let expected_origin = test.expected_atlas.origin();
+    let result_origin = test.result_multi_atlas.origin();
+    let expected_origin = test.expected_multi_atlas.origin();
 
     assert_eq!(result_origin, expected_origin);
 }
@@ -115,8 +115,8 @@ fn atlas_file_written_and_then_read_should_match_origins() {
 #[test]
 fn atlas_file_written_and_then_read_should_match_color_types() {
     let test = read_write_test(SAMPLE_DATA);
-    let result_color_type = test.result_atlas.color_type;
-    let expected_color_type = test.expected_atlas.color_type;
+    let result_color_type = test.result_multi_atlas.color_type;
+    let expected_color_type = test.expected_multi_atlas.color_type;
 
     assert_eq!(result_color_type, expected_color_type);
 }
@@ -131,8 +131,8 @@ fn atlas_file_written_and_then_read_should_match_color_types() {
 #[test]
 fn atlas_file_written_and_then_read_should_match_channel_counts() {
     let test = read_write_test(SAMPLE_DATA);
-    let result_channel_count = test.result_atlas.channel_count;
-    let expected_channel_count = test.expected_atlas.channel_count;
+    let result_channel_count = test.result_multi_atlas.channel_count;
+    let expected_channel_count = test.expected_multi_atlas.channel_count;
 
     assert_eq!(result_channel_count, expected_channel_count);
 }
@@ -147,8 +147,8 @@ fn atlas_file_written_and_then_read_should_match_channel_counts() {
 #[test]
 fn atlas_file_written_and_then_read_should_match_bytes_per_channel() {
     let test = read_write_test(SAMPLE_DATA);
-    let result_bytes_per_pixel = test.result_atlas.bytes_per_pixel;
-    let expected_bytes_per_pixel = test.expected_atlas.bytes_per_pixel;
+    let result_bytes_per_pixel = test.result_multi_atlas.bytes_per_pixel;
+    let expected_bytes_per_pixel = test.expected_multi_atlas.bytes_per_pixel;
 
     assert_eq!(result_bytes_per_pixel, expected_bytes_per_pixel);
 }
@@ -163,8 +163,8 @@ fn atlas_file_written_and_then_read_should_match_bytes_per_channel() {
 #[test]
 fn atlas_file_written_and_then_read_should_match_texture_counts() {
     let test = read_write_test(SAMPLE_DATA);
-    let result_count = test.result_atlas.texture_count();
-    let expected_count = test.expected_atlas.texture_count();
+    let result_count = test.result_multi_atlas.texture_count();
+    let expected_count = test.expected_multi_atlas.texture_count();
 
     assert_eq!(result_count, expected_count);
 }
@@ -354,7 +354,7 @@ fn atlas_file_written_and_then_read_should_preserve_texture_indices_uv2() {
     }
 }
 
-/// Given a valid texture atlas, if we read it, write it to a new file, and read
+/// Given a valid multi texture atlas, if we read it, write it to a new file, and read
 /// the new file back, we should get the same exact texture atlas back. That is, 
 /// give a texture atlas, reading and writing should satisfy the relation
 /// ```

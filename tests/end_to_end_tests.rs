@@ -97,7 +97,7 @@ fn atlas_file_written_and_then_read_should_match_widths() {
     }
 }
 
-/// Given a valid texture atlas, if we read it, write it to a new file, and read
+/// Given a valid multi texture atlas, if we read it, write it to a new file, and read
 /// the new file back, we should get the same exact texture atlas back. That is, 
 /// give a texture atlas, reading and writing should satisfy the relation
 /// ```
@@ -117,7 +117,7 @@ fn atlas_file_written_and_then_read_should_match_origins() {
     }
 }
 
-/// Given a valid texture atlas, if we read it, write it to a new file, and read
+/// Given a valid multi texture atlas, if we read it, write it to a new file, and read
 /// the new file back, we should get the same exact texture atlas back. That is, 
 /// give a texture atlas, reading and writing should satisfy the relation
 /// ```
@@ -137,7 +137,7 @@ fn atlas_file_written_and_then_read_should_match_color_types() {
     }
 }
 
-/// Given a valid texture atlas, if we read it, write it to a new file, and read
+/// Given a valid multi texture atlas, if we read it, write it to a new file, and read
 /// the new file back, we should get the same exact texture atlas back. That is, 
 /// give a texture atlas, reading and writing should satisfy the relation
 /// ```
@@ -156,8 +156,8 @@ fn atlas_file_written_and_then_read_should_match_channel_counts() {
         assert_eq!(result_channel_count, expected_channel_count);
     }
 }
-/*
-/// Given a valid texture atlas, if we read it, write it to a new file, and read
+
+/// Given a valid multi texture atlas, if we read it, write it to a new file, and read
 /// the new file back, we should get the same exact texture atlas back. That is, 
 /// give a texture atlas, reading and writing should satisfy the relation
 /// ```
@@ -167,13 +167,17 @@ fn atlas_file_written_and_then_read_should_match_channel_counts() {
 #[test]
 fn atlas_file_written_and_then_read_should_match_bytes_per_channel() {
     let test = read_write_test(SAMPLE_DATA);
-    let result_bytes_per_pixel = test.result_multi_atlas.bytes_per_pixel;
-    let expected_bytes_per_pixel = test.expected_multi_atlas.bytes_per_pixel;
+    for page_name in test.expected_multi_atlas.page_names() {
+        let result_atlas = test.result_multi_atlas.by_page_name(page_name).unwrap();
+        let expected_atlas = test.expected_multi_atlas.by_page_name(page_name).unwrap();
+        let result_bytes_per_pixel = result_atlas.bytes_per_pixel;
+        let expected_bytes_per_pixel = expected_atlas.bytes_per_pixel;
 
-    assert_eq!(result_bytes_per_pixel, expected_bytes_per_pixel);
+        assert_eq!(result_bytes_per_pixel, expected_bytes_per_pixel);
+    }
 }
 
-/// Given a valid texture atlas, if we read it, write it to a new file, and read
+/// Given a valid multi texture atlas, if we read it, write it to a new file, and read
 /// the new file back, we should get the same exact texture atlas back. That is, 
 /// give a texture atlas, reading and writing should satisfy the relation
 /// ```
@@ -183,13 +187,17 @@ fn atlas_file_written_and_then_read_should_match_bytes_per_channel() {
 #[test]
 fn atlas_file_written_and_then_read_should_match_texture_counts() {
     let test = read_write_test(SAMPLE_DATA);
-    let result_count = test.result_multi_atlas.texture_count();
-    let expected_count = test.expected_multi_atlas.texture_count();
+    for page_name in test.expected_multi_atlas.page_names() {
+        let result_atlas = test.result_multi_atlas.by_page_name(page_name).unwrap();
+        let expected_atlas = test.expected_multi_atlas.by_page_name(page_name).unwrap();
+        let result_count = result_atlas.texture_count();
+        let expected_count = expected_atlas.texture_count();
 
-    assert_eq!(result_count, expected_count);
+        assert_eq!(result_count, expected_count);
+    }
 }
 
-/// Given a valid texture atlas, if we read it, write it to a new file, and read
+/// Given a valid multi texture atlas, if we read it, write it to a new file, and read
 /// the new file back, we should get the same exact texture atlas back. That is, 
 /// give a texture atlas, reading and writing should satisfy the relation
 /// ```
@@ -200,28 +208,19 @@ fn atlas_file_written_and_then_read_should_match_texture_counts() {
 #[test]
 fn atlas_file_written_and_then_read_should_preserve_texture_names() {
     let test = read_write_test(SAMPLE_DATA);
-    let result_atlas = test.result_atlas;
-    let expected_atlas = test.expected_atlas;
-    for name in result_atlas.names().iter() {
-        let result = result_atlas.get_name(name);
-        let expected = expected_atlas.get_name(name);
-        assert_eq!(result, expected);
+    for page_name in test.expected_multi_atlas.page_names() {
+        let result_atlas = test.result_multi_atlas.by_page_name(page_name).unwrap();
+        let expected_atlas = test.expected_multi_atlas.by_page_name(page_name).unwrap();
+        for texture_name in expected_atlas.texture_names().iter() {
+            let result = result_atlas.by_texture_name(texture_name);
+            let expected = expected_atlas.by_texture_name(texture_name);
+            assert_eq!(result, expected);
+        }
     }
 }
 
-#[test]
-fn atlas_file_written_and_then_read_should_preserve_texture_names2() {
-    let test = read_write_test(SAMPLE_DATA);
-    let result_atlas = test.result_atlas;
-    let expected_atlas = test.expected_atlas;
-    for name in expected_atlas.names().iter() {
-        let result = result_atlas.get_name(name);
-        let expected = expected_atlas.get_name(name);
-        assert_eq!(result, expected);
-    }
-}
 
-/// Given a valid texture atlas, if we read it, write it to a new file, and read
+/// Given a valid multi texture atlas, if we read it, write it to a new file, and read
 /// the new file back, we should get the same exact texture atlas back. That is, 
 /// give a texture atlas, reading and writing should satisfy the relation
 /// ```
@@ -232,24 +231,14 @@ fn atlas_file_written_and_then_read_should_preserve_texture_names2() {
 #[test]
 fn atlas_file_written_and_then_read_should_preserve_texture_indices() {
     let test = read_write_test(SAMPLE_DATA);
-    let result_atlas = test.result_atlas;
-    let expected_atlas = test.expected_atlas;
-    for index in result_atlas.indices().iter() {
-        let result = result_atlas.get_index(*index);
-        let expected = expected_atlas.get_index(*index);
-        assert_eq!(result, expected);
-    }
-}
-
-#[test]
-fn atlas_file_written_and_then_read_should_preserve_texture_indices2() {
-    let test = read_write_test(SAMPLE_DATA);
-    let result_atlas = test.result_atlas;
-    let expected_atlas = test.expected_atlas;
-    for index in expected_atlas.indices().iter() {
-        let result = result_atlas.get_index(*index);
-        let expected = expected_atlas.get_index(*index);
-        assert_eq!(result, expected);
+    for page_name in test.expected_multi_atlas.page_names() {
+        let result_atlas = test.result_multi_atlas.by_page_name(page_name).unwrap();
+        let expected_atlas = test.expected_multi_atlas.by_page_name(page_name).unwrap();
+        for index in result_atlas.indices().iter() {
+            let result = result_atlas.by_index(*index);
+            let expected = expected_atlas.by_index(*index);
+            assert_eq!(result, expected);
+        }
     }
 }
 
@@ -264,15 +253,19 @@ fn atlas_file_written_and_then_read_should_preserve_texture_indices2() {
 #[test]
 fn atlas_file_written_and_then_read_should_preserve_textures() {
     let test = read_write_test(SAMPLE_DATA);
-    let result_atlas = test.result_atlas;
-    let expected_atlas = test.expected_atlas;
-    let indices = result_atlas.indices();
-    let names = result_atlas.names();
-    let result_zip = indices.iter().zip(names.iter());
-    for (index, name) in result_zip.filter(|(index, name)| { result_atlas.get_index(**index) == result_atlas.get_name(name) }) {
-        let expected_index = expected_atlas.get_index(*index); 
-        let expected_name = expected_atlas.get_name(name);
-        assert_eq!(expected_index, expected_name);
+    for page_name in test.expected_multi_atlas.page_names() {
+        let result_atlas = test.result_multi_atlas.by_page_name(page_name).unwrap();
+        let expected_atlas = test.expected_multi_atlas.by_page_name(page_name).unwrap();
+        let indices = result_atlas.indices();
+        let names = result_atlas.texture_names();
+        let result_zip = indices.iter().zip(names.iter());
+        for (index, name) in result_zip.filter(|(index, name)| { 
+                result_atlas.by_index(**index) == result_atlas.by_texture_name(name) 
+        }) {
+            let expected_index = expected_atlas.by_index(*index); 
+            let expected_name = expected_atlas.by_texture_name(name);
+            assert_eq!(expected_index, expected_name);
+        }
     }
 }
 
@@ -287,10 +280,12 @@ fn atlas_file_written_and_then_read_should_preserve_textures() {
 #[test]
 fn atlas_file_written_and_then_read_should_preserve_underlying_image_data() {
     let test = read_write_test(SAMPLE_DATA);
-    let result_atlas = test.result_atlas;
-    let expected_atlas = test.expected_atlas;
+    for page_name in test.expected_multi_atlas.page_names() {
+        let result_atlas = test.result_multi_atlas.by_page_name(page_name).unwrap();
+        let expected_atlas = test.expected_multi_atlas.by_page_name(page_name).unwrap();
     
-    assert_eq!(result_atlas.as_bytes(), expected_atlas.as_bytes());
+        assert_eq!(result_atlas.as_bytes(), expected_atlas.as_bytes());
+    }
 }
 
 /// Given a valid texture atlas, if we read it, write it to a new file, and read
@@ -304,10 +299,12 @@ fn atlas_file_written_and_then_read_should_preserve_underlying_image_data() {
 #[test]
 fn atlas_file_written_and_then_read_should_preserve_underlying_image_data_length() {
     let test = read_write_test(SAMPLE_DATA);
-    let result_atlas = test.result_atlas;
-    let expected_atlas = test.expected_atlas;
+    for page_name in test.expected_multi_atlas.page_names() {
+        let result_atlas = test.result_multi_atlas.by_page_name(page_name).unwrap();
+        let expected_atlas = test.expected_multi_atlas.by_page_name(page_name).unwrap();
     
-    assert_eq!(result_atlas.len_bytes(), expected_atlas.len_bytes());
+        assert_eq!(result_atlas.len_bytes(), expected_atlas.len_bytes());
+    }
 }
 
 /// Given a valid texture atlas, if we read it, write it to a new file, and read
@@ -321,24 +318,14 @@ fn atlas_file_written_and_then_read_should_preserve_underlying_image_data_length
 #[test]
 fn atlas_file_written_and_then_read_should_preserve_texture_names_uv() {
     let test = read_write_test(SAMPLE_DATA);
-    let result_atlas = test.result_atlas;
-    let expected_atlas = test.expected_atlas;
-    for name in result_atlas.names().iter() {
-        let result = result_atlas.get_name_uv(name);
-        let expected = expected_atlas.get_name_uv(name);
-        assert_eq!(result, expected);
-    }
-}
-
-#[test]
-fn atlas_file_written_and_then_read_should_preserve_texture_names_uv2() {
-    let test = read_write_test(SAMPLE_DATA);
-    let result_atlas = test.result_atlas;
-    let expected_atlas = test.expected_atlas;
-    for name in expected_atlas.names().iter() {
-        let result = result_atlas.get_name_uv(name);
-        let expected = expected_atlas.get_name_uv(name);
-        assert_eq!(result, expected);
+    for page_name in test.expected_multi_atlas.page_names() {
+        let result_atlas = test.result_multi_atlas.by_page_name(page_name).unwrap();
+        let expected_atlas = test.expected_multi_atlas.by_page_name(page_name).unwrap();
+        for texture_name in result_atlas.texture_names().iter() {
+            let result = result_atlas.by_texture_name_uv(texture_name);
+            let expected = expected_atlas.by_texture_name_uv(texture_name);
+            assert_eq!(result, expected);
+        }
     }
 }
 
@@ -353,24 +340,14 @@ fn atlas_file_written_and_then_read_should_preserve_texture_names_uv2() {
 #[test]
 fn atlas_file_written_and_then_read_should_preserve_texture_indices_uv() {
     let test = read_write_test(SAMPLE_DATA);
-    let result_atlas = test.result_atlas;
-    let expected_atlas = test.expected_atlas;
-    for index in result_atlas.indices().iter() {
-        let result = result_atlas.get_index_uv(*index);
-        let expected = expected_atlas.get_index_uv(*index);
-        assert_eq!(result, expected);
-    }
-}
-
-#[test]
-fn atlas_file_written_and_then_read_should_preserve_texture_indices_uv2() {
-    let test = read_write_test(SAMPLE_DATA);
-    let result_atlas = test.result_atlas;
-    let expected_atlas = test.expected_atlas;
-    for index in expected_atlas.indices().iter() {
-        let result = result_atlas.get_index_uv(*index);
-        let expected = expected_atlas.get_index_uv(*index);
-        assert_eq!(result, expected);
+    for page_name in test.expected_multi_atlas.page_names() {
+        let result_atlas = test.result_multi_atlas.by_page_name(page_name).unwrap();
+        let expected_atlas = test.expected_multi_atlas.by_page_name(page_name).unwrap();
+        for index in result_atlas.indices().iter() {
+            let result = result_atlas.by_index_uv(*index);
+            let expected = expected_atlas.by_index_uv(*index);
+            assert_eq!(result, expected);
+        }
     }
 }
 
@@ -385,15 +362,18 @@ fn atlas_file_written_and_then_read_should_preserve_texture_indices_uv2() {
 #[test]
 fn atlas_file_written_and_then_read_should_preserve_textures_uv() {
     let test = read_write_test(SAMPLE_DATA);
-    let result_atlas = test.result_atlas;
-    let expected_atlas = test.expected_atlas;
-    let indices = result_atlas.indices();
-    let names = result_atlas.names();
-    let result_zip = indices.iter().zip(names.iter());
-    for (index, name) in result_zip.filter(|(index, name)| { result_atlas.get_index_uv(**index) == result_atlas.get_name_uv(name) }) {
-        let expected_index = expected_atlas.get_index_uv(*index); 
-        let expected_name = expected_atlas.get_name_uv(name);
-        assert_eq!(expected_index, expected_name);
+    for page_name in test.expected_multi_atlas.page_names() {
+        let result_atlas = test.result_multi_atlas.by_page_name(page_name).unwrap();
+        let expected_atlas = test.expected_multi_atlas.by_page_name(page_name).unwrap();
+        let indices = result_atlas.indices();
+        let names = result_atlas.texture_names();
+        let result_zip = indices.iter().zip(names.iter());
+        for (index, name) in result_zip.filter(|(index, name)| { 
+            result_atlas.by_index_uv(**index) == result_atlas.by_texture_name_uv(name) 
+        }) {
+            let expected_index = expected_atlas.by_index_uv(*index); 
+            let expected_name = expected_atlas.by_texture_name_uv(name);
+            assert_eq!(expected_index, expected_name);
+        }
     }
 }
-*/

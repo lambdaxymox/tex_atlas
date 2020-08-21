@@ -985,34 +985,36 @@ pub fn from_reader<R: io::Read + io::Seek>(reader: R) -> Result<MultiTextureAtla
     })
 }
 
-/// Write a texture atlas out to any writable endpoint. This includes files
-/// and buffers in memory.
-pub fn to_writer<W: io::Write + io::Seek>(writer: W, atlas: &TextureAtlas2D) -> io::Result<()> {
+/// Write a multi texture atlas out to any writable endpoint. This 
+/// includes files and buffers in memory.
+pub fn to_writer<W: io::Write + io::Seek>(writer: W, multi_atlas: &MultiTextureAtlas2D) -> io::Result<()> {
     let mut zip_file = zip::ZipWriter::new(writer);
     let options =
         zip::write::FileOptions::default().compression_method(zip::CompressionMethod::Stored);
 
-    // Write out the coordinate charts.
-    zip_file.start_file("atlas.json", options)?;
-    serde_json::to_writer_pretty(&mut zip_file, &atlas.coordinate_charts())?;
+    for atlas in multi_atlas.pages() {
+        // Write out the coordinate charts.
+        zip_file.start_file(format!("{}.json", &atlas.atlas_name), options)?;
+        serde_json::to_writer_pretty(&mut zip_file, &atlas.coordinate_charts())?;
 
-    // If the origin is the bottom left of the image, we need to flip the image back over
-    // before writing it out. PNG images index start from the top left corner of
-    // the image.
-    let mut image = atlas.image().clone();
-    let bytes_per_pixel = atlas.color_type.bytes_per_pixel();
-    let width_in_bytes =  bytes_per_pixel * atlas.width;
-    orient_image(&mut image.data, atlas.origin, atlas.height, width_in_bytes);
+        // If the origin is the bottom left of the image, we need to flip the image back over
+        // before writing it out. PNG images index start from the top left corner of
+        // the image.
+        let mut image = atlas.image().clone();
+        let bytes_per_pixel = atlas.color_type.bytes_per_pixel();
+        let width_in_bytes =  bytes_per_pixel * atlas.width;
+        orient_image(&mut image.data, atlas.origin, atlas.height, width_in_bytes);
 
-    // Write out the atlas image.
-    zip_file.start_file("atlas.png", options)?;
-    let png_writer = png::PNGEncoder::new(&mut zip_file);
-    let height = atlas.height as u32;
-    let width = atlas.width as u32;
-    let color = image::ColorType::Rgba8;
-    png_writer.encode(image.as_bytes(), width, height, color).map_err(
-        |e| io::Error::new(io::ErrorKind::Other, Box::new(e))
-    )?;
+        // Write out the atlas image.
+        zip_file.start_file(format!("{}.png", &atlas.atlas_name), options)?;
+        let png_writer = png::PNGEncoder::new(&mut zip_file);
+        let height = atlas.height as u32;
+        let width = atlas.width as u32;
+        let color = image::ColorType::Rgba8;
+        png_writer.encode(image.as_bytes(), width, height, color).map_err(
+            |e| io::Error::new(io::ErrorKind::Other, Box::new(e))
+        )?;
+    }
 
     zip_file.finish()?;
 
@@ -1035,12 +1037,12 @@ pub fn load_file<P: AsRef<Path>>(path: P) -> Result<MultiTextureAtlas2DResult, T
 }
 
 /// Write a texture atlas direct to a file.
-pub fn write_to_file<P: AsRef<Path>>(path: P, atlas: &TextureAtlas2D) -> io::Result<()> {
+pub fn write_to_file<P: AsRef<Path>>(path: P, multi_atlas: &MultiTextureAtlas2D) -> io::Result<()> {
     // Set up the image zip archive.
     let mut file_path = path.as_ref().to_path_buf();
     file_path.set_extension("atlas");
     let file = File::create(&file_path)?;
 
     // Write out the atlas contents.
-    to_writer(file, atlas)
+    to_writer(file, multi_atlas)
 }

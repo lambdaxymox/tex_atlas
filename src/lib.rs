@@ -735,10 +735,10 @@ pub struct MultiTextureAtlas2D {
 
 impl MultiTextureAtlas2D {
     /// Construct a new multi-texture atlas. 
-    pub fn new(pages: Vec<TextureAtlas2D>, names: Vec<String>) -> MultiTextureAtlas2D {
+    pub fn new(pages: Vec<TextureAtlas2D>) -> MultiTextureAtlas2D {
         let mut page_names = HashMap::new();
-        for i in 0..names.len() {
-            page_names.insert(names[i].clone(), i);
+        for i in 0..pages.len() {
+            page_names.insert(pages[i].atlas_name.clone(), i);
         }
 
         MultiTextureAtlas2D {
@@ -978,7 +978,7 @@ pub fn from_reader<R: io::Read + io::Seek>(reader: R) -> Result<MultiTextureAtla
         }
     }
 
-    let multi_atlas = MultiTextureAtlas2D::new(pages, page_names);
+    let multi_atlas = MultiTextureAtlas2D::new(pages);
     Ok(MultiTextureAtlas2DResult {
         multi_atlas: multi_atlas,
         warnings: warnings,

@@ -74,9 +74,8 @@ fn multi_atlas() -> MultiTextureAtlas2D {
     let atlas_name = String::from("atlas");
     let atlas = TextureAtlas2D::new(width, height, color_type, origin, atlas_entries, atlas_name.clone(), data);
     let pages = vec![atlas];
-    let page_names = vec![atlas_name];
 
-    MultiTextureAtlas2D::new(pages, page_names)
+    MultiTextureAtlas2D::new(pages)
 }
 
 /// The sample file exists.

@@ -964,7 +964,6 @@ pub fn from_reader<R: io::Read + io::Seek>(reader: R) -> Result<MultiTextureAtla
     }
 
     let mut pages = vec![];
-    let mut page_names = vec![];
     let mut warnings = vec![];
     for atlas_name in atlas_names.drain(..) {
         let result = atlas_from_reader(&mut zip_reader, &atlas_name);
@@ -972,7 +971,6 @@ pub fn from_reader<R: io::Read + io::Seek>(reader: R) -> Result<MultiTextureAtla
             Ok(atlas_result) => {
                 pages.push(atlas_result.atlas);
                 warnings.push(atlas_result.warnings);
-                page_names.push(atlas_name);
             }
             Err(e) => return Err(e)
         }

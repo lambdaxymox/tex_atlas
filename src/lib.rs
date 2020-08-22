@@ -331,16 +331,6 @@ pub struct BoundingBoxCornersPixelCoords {
     pub bottom_right: OffsetPixelCoords,
 }
 
-impl BoundingBoxPixelCoords {
-    fn new(top_left: OffsetPixelCoords, width: usize, height: usize) -> BoundingBoxPixelCoords {
-        BoundingBoxPixelCoords {
-            top_left: top_left,
-            width: width,
-            height: height,
-        }
-    }
-}
-
 #[derive(Clone, Debug)]
 struct TextureImage2D {
     width: usize,

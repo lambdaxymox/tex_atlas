@@ -812,25 +812,22 @@ fn orient_image(image: &mut [u8], origin: Origin, height: usize, width_in_bytes:
 }
 
 /// Load an atlas image file from a reader.
-fn load_image_from_reader<R: io::Read>(reader: R) -> Result<TextureImage2D, TextureAtlas2DError> {
+fn load_image_from_reader<R: io::Read>(reader: R) -> Result<TextureImage2D, ErrorKind> {
     let png_reader = png::PngDecoder::new(reader).map_err(|e| {
-        let kind = ErrorKind::CouldNotLoadAtlasImageBuffer;
-        TextureAtlas2DError::new(kind, String::from(""), Some(Box::new(e)))
+        ErrorKind::CouldNotLoadAtlasImageBuffer
     })?;
     let (width, height) = png_reader.dimensions();
     let (width, height) = (width as usize, height as usize);
     let color_type = match png_reader.color_type() {
         image::ColorType::Rgba8 => ColorType::Rgba8,
         _ => {
-            let kind = ErrorKind::UnrecognizedColorType;
-            return Err(TextureAtlas2DError::new(kind, String::from(""), None));
+            return Err(ErrorKind::UnrecognizedColorType);
         }
     };
     let bytes_per_pixel = png_reader.color_type().bytes_per_pixel() as usize;
     let mut image_data: Vec<u8> = vec![0; width * height * bytes_per_pixel];
     png_reader.read_image(&mut image_data).map_err(|e| {
-        let kind = ErrorKind::CouldNotLoadAtlasImageBuffer;
-        TextureAtlas2DError::new(kind, String::from(""), Some(Box::new(e)))
+        ErrorKind::CouldNotLoadAtlasImageBuffer
     })?;
 
     let width_in_bytes = bytes_per_pixel * width;
@@ -863,7 +860,9 @@ fn atlas_from_reader<R: io::Read + io::Seek>(zip_reader: &mut ZipArchive<R>, pag
         let kind = ErrorKind::CouldNotLoadAtlasImageBuffer;
         TextureAtlas2DError::new(kind, String::from(page_name), Some(Box::new(e)))
     })?;
-    let tex_image = load_image_from_reader(image_file)?;
+    let tex_image = load_image_from_reader(image_file).map_err(|kind| {
+        TextureAtlas2DError::new(kind, String::from(page_name), None)
+    })?;
     
     // Check that the image size is a power of two.
     let width = tex_image.width;
@@ -1017,8 +1016,9 @@ pub fn load_from_memory(buffer: &[u8]) -> Result<MultiTextureAtlas2DResult, Text
 /// Load a texture atlas directly from a file.
 pub fn load_file<P: AsRef<Path>>(path: P) -> Result<MultiTextureAtlas2DResult, TextureAtlas2DError> {
     let reader = File::open(&path).map_err(|e|{
+        let file_path = path.as_ref().file_name().map_or("", |s| s.to_str().unwrap_or(""));
         let kind = ErrorKind::CouldNotOpenTextureAtlas;
-        TextureAtlas2DError::new(kind, String::from(""), Some(Box::new(e)))
+        TextureAtlas2DError::new(kind, String::from(file_path), Some(Box::new(e)))
     })?;
     from_reader(reader)
 }

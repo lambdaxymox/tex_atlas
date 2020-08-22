@@ -956,11 +956,10 @@ pub fn from_reader<R: io::Read + io::Seek>(reader: R) -> Result<MultiTextureAtla
     let mut pages = vec![];
     let mut warnings = vec![];
     for atlas_name in atlas_names.drain(..) {
-        let result = atlas_from_reader(&mut zip_reader, &atlas_name);
-        match result {
-            Ok(atlas_result) => {
-                pages.push(atlas_result.atlas);
-                warnings.push(atlas_result.warnings);
+        match atlas_from_reader(&mut zip_reader, &atlas_name) {
+            Ok(result) => {
+                pages.push(result.atlas);
+                warnings.push(result.warnings);
             }
             Err(e) => return Err(e)
         }

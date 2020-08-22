@@ -52,7 +52,7 @@ fn read_write_test<P: AsRef<Path>>(expected_path: P) -> ReadWriteTest {
     let buffer = vec![];
     let mut cursor = io::Cursor::new(buffer);
     tex_atlas::to_writer(&mut cursor, &expected_multi_atlas).unwrap();
-    let result_multi_atlas = tex_atlas::from_reader(&mut cursor).unwrap().multi_atlas;
+    let result_multi_atlas = tex_atlas::from_reader(&mut cursor, "").unwrap().multi_atlas;
 
     ReadWriteTest::new(expected_multi_atlas, result_multi_atlas)
 }

@@ -144,13 +144,28 @@ impl fmt::Display for ErrorKind {
 #[derive(Debug)]
 struct Repr {
     kind: ErrorKind,
-    name: String,
+    multi_atlas_name: Option<String>,
+    atlas_name: Option<String>,
     error: Option<Box<dyn error::Error + Send + Sync>>,
 }
 
 impl fmt::Display for Repr {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "Texture Atlas `{}` generated error `{}`: {:?}", self.name, self.kind, self.error)
+        if self.multi_atlas_name.is_some() && self.atlas_name.is_some() {
+            write!(f, "Texture atlas `{}` from multi texture atlas `{}` generated error `{:?}`", 
+                self.atlas_name.as_ref().unwrap(), self.multi_atlas_name.as_ref().unwrap(), self.kind
+            )
+        } else if self.multi_atlas_name.is_some() && self.atlas_name.is_none() {
+            write!(f, "Multi atlas `{}` generated error `{:?}`", 
+                self.multi_atlas_name.as_ref().unwrap(), self.kind
+            )
+        } else if self.multi_atlas_name.is_none() && self.atlas_name.is_some() {
+            write!(f, "Texture atlas `{}` from multi texture atlas `unnamed` generated error `{:?}`", 
+                self.atlas_name.as_ref().unwrap(), self.kind
+            )
+        } else {
+            write!(f, "Texture atlas `unnamed` from multi texture atlas `unnamed` generated error {:?}", self.kind)
+        }
     }
 }
 
@@ -161,11 +176,17 @@ pub struct TextureAtlas2DError {
 }
 
 impl TextureAtlas2DError {
-    pub fn new(kind: ErrorKind, name: String, error: Option<Box<dyn error::Error + Send + Sync + 'static>>) -> TextureAtlas2DError {
+    pub fn new(
+        kind: ErrorKind, 
+        multi_atlas_name: Option<String>, 
+        atlas_name: Option<String>, 
+        error: Option<Box<dyn error::Error + Send + Sync + 'static>>) -> TextureAtlas2DError {
+        
         TextureAtlas2DError {
             repr: Repr {
                 kind: kind,
-                name: name,
+                multi_atlas_name: multi_atlas_name,
+                atlas_name: atlas_name,
                 error: error,
             }
         }
@@ -175,8 +196,18 @@ impl TextureAtlas2DError {
         self.repr.kind
     }
 
+    pub fn multi_atlas_name(&self) -> &str {
+        match &self.repr.multi_atlas_name {
+            Some(name) => name.as_str(),
+            None => ""
+        }
+    }
+
     pub fn atlas_name(&self) -> &str {
-        &self.repr.name
+        match &self.repr.multi_atlas_name {
+            Some(name) => name.as_str(),
+            None => ""
+        }
     }
 }
 
@@ -813,7 +844,7 @@ fn orient_image(image: &mut [u8], origin: Origin, height: usize, width_in_bytes:
 
 /// Load an atlas image file from a reader.
 fn load_image_from_reader<R: io::Read>(reader: R) -> Result<TextureImage2D, ErrorKind> {
-    let png_reader = png::PngDecoder::new(reader).map_err(|e| {
+    let png_reader = png::PngDecoder::new(reader).map_err(|_| {
         ErrorKind::CouldNotLoadAtlasImageBuffer
     })?;
     let (width, height) = png_reader.dimensions();
@@ -835,7 +866,7 @@ fn load_image_from_reader<R: io::Read>(reader: R) -> Result<TextureImage2D, Erro
     };
     let bytes_per_pixel = png_reader.color_type().bytes_per_pixel() as usize;
     let mut image_data: Vec<u8> = vec![0; width * height * bytes_per_pixel];
-    png_reader.read_image(&mut image_data).map_err(|e| {
+    png_reader.read_image(&mut image_data).map_err(|_| {
         ErrorKind::CouldNotLoadAtlasImageBuffer
     })?;
 
@@ -854,23 +885,31 @@ fn load_image_from_reader<R: io::Read>(reader: R) -> Result<TextureImage2D, Erro
     Ok(tex_image)
 }
 
-fn atlas_from_reader<R: io::Read + io::Seek>(zip_reader: &mut ZipArchive<R>, page_name: &str) -> Result<TextureAtlas2DResult, TextureAtlas2DError> {
+fn atlas_from_reader<R: io::Read + io::Seek>(zip_reader: &mut ZipArchive<R>, multi_atlas_name: &str, page_name: &str) -> Result<TextureAtlas2DResult, TextureAtlas2DError> {
     let coordinate_charts_name = format!("{}.json", page_name);
     let coordinate_charts_file = zip_reader.by_name(&coordinate_charts_name).map_err(|e| {
         let kind = ErrorKind::CouldNotLoadCoordinateCharts;
-        TextureAtlas2DError::new(kind, String::from(page_name), Some(Box::new(e)))
+        let some_multi_atlas_name = Some(String::from(multi_atlas_name));
+        let atlas_name = Some(String::from(page_name));
+        TextureAtlas2DError::new(kind, some_multi_atlas_name, atlas_name, Some(Box::new(e)))
     })?;
     let atlas_chart_data: TextureAtlas2DSerialization = serde_json::from_reader(coordinate_charts_file).map_err(|e| {
         let kind = ErrorKind::CouldNotLoadCoordinateCharts;
-        TextureAtlas2DError::new(kind, String::from(page_name), Some(Box::new(e)))
+        let some_multi_atlas_name = Some(String::from(multi_atlas_name));
+        let atlas_name = Some(String::from(page_name));
+        TextureAtlas2DError::new(kind, some_multi_atlas_name, atlas_name, Some(Box::new(e)))
     })?;
     let image_file_name = format!("{}.png", page_name);
     let image_file = zip_reader.by_name(&image_file_name).map_err(|e| {
         let kind = ErrorKind::CouldNotLoadAtlasImageBuffer;
-        TextureAtlas2DError::new(kind, String::from(page_name), Some(Box::new(e)))
+        let some_multi_atlas_name = Some(String::from(multi_atlas_name));
+        let atlas_name = Some(String::from(page_name));
+        TextureAtlas2DError::new(kind, some_multi_atlas_name, atlas_name, Some(Box::new(e)))
     })?;
     let tex_image = load_image_from_reader(image_file).map_err(|kind| {
-        TextureAtlas2DError::new(kind, String::from(page_name), None)
+        let some_multi_atlas_name = Some(String::from(multi_atlas_name));
+        let atlas_name = Some(String::from(page_name));
+        TextureAtlas2DError::new(kind, some_multi_atlas_name, atlas_name, None)
     })?;
     
     // Check that the image size is a power of two.
@@ -940,10 +979,10 @@ fn extract_atlas_names<R: io::Read + io::Seek>(zip_reader: &ZipArchive<R>) -> (V
 }
 
 /// Load a multi texture atlas from a readable endpoint. This primarily includes files and buffers in memory.
-pub fn from_reader<R: io::Read + io::Seek>(reader: R) -> Result<MultiTextureAtlas2DResult, TextureAtlas2DError> {
+pub fn from_reader<R: io::Read + io::Seek>(reader: R, multi_atlas_name: &str) -> Result<MultiTextureAtlas2DResult, TextureAtlas2DError> {
     let mut zip_reader = zip::ZipArchive::new(reader).map_err(|e| {
         let kind = ErrorKind::CouldNotOpenTextureAtlas;
-        TextureAtlas2DError::new(kind, String::from(""), Some(Box::new(e)))
+        TextureAtlas2DError::new(kind, Some(String::from(multi_atlas_name)), None, Some(Box::new(e)))
     })?;
     let (
         mut atlas_names, 
@@ -952,19 +991,19 @@ pub fn from_reader<R: io::Read + io::Seek>(reader: R) -> Result<MultiTextureAtla
 
     if !atlases_missing_coordinates.is_empty() {
         let kind = ErrorKind::MissingCoordinateCharts;
-        let name = atlases_missing_coordinates[0].clone();
-        return Err(TextureAtlas2DError::new(kind, name, None));
+        let atlas_name = atlases_missing_coordinates[0].clone();
+        return Err(TextureAtlas2DError::new(kind, Some(String::from(multi_atlas_name)), Some(atlas_name), None));
     }
     if !atlases_missing_images.is_empty() {
         let kind = ErrorKind::MissingImageBuffer;
-        let name = atlases_missing_images[0].clone();
-        return Err(TextureAtlas2DError::new(kind, name, None));
+        let atlas_name = atlases_missing_images[0].clone();
+        return Err(TextureAtlas2DError::new(kind, Some(String::from(multi_atlas_name)), Some(atlas_name), None));
     }
 
     let mut pages = vec![];
     let mut warnings = vec![];
     for atlas_name in atlas_names.drain(..) {
-        match atlas_from_reader(&mut zip_reader, &atlas_name) {
+        match atlas_from_reader(&mut zip_reader, multi_atlas_name, &atlas_name) {
             Ok(result) => {
                 pages.push(result.atlas);
                 warnings.push(result.warnings);
@@ -1019,17 +1058,17 @@ pub fn to_writer<W: io::Write + io::Seek>(writer: W, multi_atlas: &MultiTextureA
 /// Load a texture atlas from a reader or buffer.
 pub fn load_from_memory(buffer: &[u8]) -> Result<MultiTextureAtlas2DResult, TextureAtlas2DError> {
     let reader = io::Cursor::new(buffer);
-    from_reader(reader)   
+    from_reader(reader, "")
 }
 
 /// Load a texture atlas directly from a file.
 pub fn load_file<P: AsRef<Path>>(path: P) -> Result<MultiTextureAtlas2DResult, TextureAtlas2DError> {
+    let file_name = path.as_ref().file_name().map_or("", |s| s.to_str().unwrap_or(""));
     let reader = File::open(&path).map_err(|e|{
-        let file_path = path.as_ref().file_name().map_or("", |s| s.to_str().unwrap_or(""));
         let kind = ErrorKind::CouldNotOpenTextureAtlas;
-        TextureAtlas2DError::new(kind, String::from(file_path), Some(Box::new(e)))
+        TextureAtlas2DError::new(kind, Some(String::from(file_name)), None, Some(Box::new(e)))
     })?;
-    from_reader(reader)
+    from_reader(reader, file_name)
 }
 
 /// Write a texture atlas direct to a file.

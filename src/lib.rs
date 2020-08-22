@@ -924,7 +924,7 @@ fn extract_atlas_names<R: io::Read + io::Seek>(zip_reader: &ZipArchive<R>) -> (V
         } else {
             // We should not get here. The code before the loop that filtered and sorted the file list 
             // should have taken care of this.
-            i += 1;
+            panic!();
         }
     }
 

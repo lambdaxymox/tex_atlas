@@ -819,7 +819,16 @@ fn load_image_from_reader<R: io::Read>(reader: R) -> Result<TextureImage2D, Erro
     let (width, height) = png_reader.dimensions();
     let (width, height) = (width as usize, height as usize);
     let color_type = match png_reader.color_type() {
+        image::ColorType::L8 => ColorType::L8,
+        image::ColorType::La8 => ColorType::La8,
+        image::ColorType::Rgb8 => ColorType::Rgb8,
         image::ColorType::Rgba8 => ColorType::Rgba8,
+        image::ColorType::L16 => ColorType::L16,
+        image::ColorType::La16 => ColorType::La16,
+        image::ColorType::Rgb16 => ColorType::Rgb16,
+        image::ColorType::Rgba16 => ColorType::Rgba16,
+        image::ColorType::Bgr8 => ColorType::Bgr8,
+        image::ColorType::Bgra8 => ColorType::Bgra8,
         _ => {
             return Err(ErrorKind::UnrecognizedColorType);
         }

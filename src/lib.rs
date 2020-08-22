@@ -551,8 +551,8 @@ impl TextureAtlas2D {
 
     /// Get the set of all texture names for the textures inside the 
     /// texture atlas.
-    pub fn texture_names(&self) -> Vec<&str> {
-        self.texture_names.keys().map(|s| s.as_str()).collect()
+    pub fn texture_names(&self) -> impl Iterator<Item = &str> {
+        self.texture_names.keys().map(|s| s.as_str())
     }
 
     /// Get the set of all texture indices for the textures inside

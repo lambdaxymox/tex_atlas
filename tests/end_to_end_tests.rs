@@ -211,7 +211,7 @@ fn atlas_file_written_and_then_read_should_preserve_texture_names() {
     for page_name in test.expected_multi_atlas.page_names() {
         let result_atlas = test.result_multi_atlas.by_page_name(page_name).unwrap();
         let expected_atlas = test.expected_multi_atlas.by_page_name(page_name).unwrap();
-        for texture_name in expected_atlas.texture_names().iter() {
+        for texture_name in expected_atlas.texture_names() {
             let result = result_atlas.by_texture_name(texture_name);
             let expected = expected_atlas.by_texture_name(texture_name);
             assert_eq!(result, expected);
@@ -258,7 +258,7 @@ fn atlas_file_written_and_then_read_should_preserve_textures() {
         let expected_atlas = test.expected_multi_atlas.by_page_name(page_name).unwrap();
         let indices = result_atlas.indices();
         let names = result_atlas.texture_names();
-        let result_zip = indices.iter().zip(names.iter());
+        let result_zip = indices.iter().zip(names);
         for (index, name) in result_zip.filter(|(index, name)| { 
                 result_atlas.by_index(**index) == result_atlas.by_texture_name(name) 
         }) {
@@ -321,7 +321,7 @@ fn atlas_file_written_and_then_read_should_preserve_texture_names_uv() {
     for page_name in test.expected_multi_atlas.page_names() {
         let result_atlas = test.result_multi_atlas.by_page_name(page_name).unwrap();
         let expected_atlas = test.expected_multi_atlas.by_page_name(page_name).unwrap();
-        for texture_name in result_atlas.texture_names().iter() {
+        for texture_name in result_atlas.texture_names() {
             let result = result_atlas.by_texture_name_uv(texture_name);
             let expected = expected_atlas.by_texture_name_uv(texture_name);
             assert_eq!(result, expected);
@@ -367,7 +367,7 @@ fn atlas_file_written_and_then_read_should_preserve_textures_uv() {
         let expected_atlas = test.expected_multi_atlas.by_page_name(page_name).unwrap();
         let indices = result_atlas.indices();
         let names = result_atlas.texture_names();
-        let result_zip = indices.iter().zip(names.iter());
+        let result_zip = indices.iter().zip(names);
         for (index, name) in result_zip.filter(|(index, name)| { 
             result_atlas.by_index_uv(**index) == result_atlas.by_texture_name_uv(name) 
         }) {

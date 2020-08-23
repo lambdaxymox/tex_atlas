@@ -739,6 +739,7 @@ impl TextureAtlas2D {
         TextureAtlas2DSerialization::new(self.origin, coordinate_charts)
     }
 
+    /// Get the underlying texture image.
     fn image(&self) -> &TextureImage2D {
         &self.data
     }
@@ -803,6 +804,24 @@ impl MultiTextureAtlas2D {
     pub fn page_names(&self) -> impl Iterator<Item = &str> {
         self.page_names.keys().map(|s| s.as_str())
     }
+}
+
+impl std::ops::Index<usize> for MultiTextureAtlas2D {
+    type Output = TextureAtlas2D;
+
+    #[inline]
+    fn index(&self, index: usize) -> &Self::Output {
+        &self.pages[index]
+    } 
+}
+
+impl std::ops::Index<&str> for MultiTextureAtlas2D {
+    type Output = TextureAtlas2D;
+
+    #[inline]
+    fn index(&self, index: &str) -> &Self::Output {
+        &self.by_page_name(index).unwrap()
+    } 
 }
 
 /// This type bundles together a texture atlas and any possible warnings generated

@@ -1088,18 +1088,20 @@ pub fn to_writer<W>(writer: W, multi_atlas: &MultiTextureAtlas2D) -> Result<(), 
                     let kind = ErrorKind::IoError;
                     let multi_atlas_name = None;
                     let atlas_name = None;
-                    let error = None;
 
-                    TextureAtlas2DError::new(kind, multi_atlas_name, atlas_name, error)
+                    TextureAtlas2DError::new(
+                        kind, multi_atlas_name, atlas_name, Some(Box::new(e))
+                    )
                 })?;
         serde_json::to_writer_pretty(&mut zip_file, &atlas.coordinate_charts())
                    .map_err(|e| {
                         let kind = ErrorKind::IoError;
                         let multi_atlas_name = None;
                         let atlas_name = None;
-                        let error = None;
     
-                        TextureAtlas2DError::new(kind, multi_atlas_name, atlas_name, error)
+                        TextureAtlas2DError::new(
+                            kind, multi_atlas_name, atlas_name, Some(Box::new(e))
+                        )
                    })?;
 
         // If the origin is the bottom left of the image, we need to flip the image back over
@@ -1116,9 +1118,10 @@ pub fn to_writer<W>(writer: W, multi_atlas: &MultiTextureAtlas2D) -> Result<(), 
                     let kind = ErrorKind::IoError;
                     let multi_atlas_name = None;
                     let atlas_name = None;
-                    let error = None;
 
-                    TextureAtlas2DError::new(kind, multi_atlas_name, atlas_name, error)
+                    TextureAtlas2DError::new(
+                        kind, multi_atlas_name, atlas_name, Some(Box::new(e))
+                    )
                 })?;
         let png_writer = png::PNGEncoder::new(&mut zip_file);
         let height = atlas.height as u32;
@@ -1128,18 +1131,20 @@ pub fn to_writer<W>(writer: W, multi_atlas: &MultiTextureAtlas2D) -> Result<(), 
             let kind = ErrorKind::IoError;
             let multi_atlas_name = None;
             let atlas_name = None;
-            let error = None;
 
-            TextureAtlas2DError::new(kind, multi_atlas_name, atlas_name, error)
+            TextureAtlas2DError::new(
+                kind, multi_atlas_name, atlas_name, Some(Box::new(e))
+            )
         })?;
     }
 
     zip_file.finish().map_err(|e| {
+        let kind = ErrorKind::IoError;
+        let multi_atlas_name = None;
+        let atlas_name = None;
+        
         TextureAtlas2DError::new(
-            ErrorKind::IoError, 
-            None, 
-            None,
-            Some(Box::new(e))
+            kind, multi_atlas_name, atlas_name, Some(Box::new(e))
         )
     })?;
 
@@ -1157,11 +1162,11 @@ pub fn load_file<P: AsRef<Path>>(path: P) -> Result<MultiTextureAtlas2DResult, T
     let file_name = path.as_ref().file_name().map_or("", |s| s.to_str().unwrap_or(""));
     let reader = File::open(&path).map_err(|e| {
         let kind = ErrorKind::CouldNotOpenTextureAtlas;
+        let multi_atlas_name = Some(String::from(file_name));
+        let atlas_name = None;
+        
         TextureAtlas2DError::new(
-            kind, 
-            Some(String::from(file_name)), 
-            None, 
-            Some(Box::new(e))
+            kind, multi_atlas_name, atlas_name, Some(Box::new(e))
         )
     })?;
     from_reader(reader, file_name)
@@ -1176,9 +1181,10 @@ pub fn write_to_file<P: AsRef<Path>>(path: P, multi_atlas: &MultiTextureAtlas2D)
         let kind = ErrorKind::IoError;
         let multi_atlas_name = None;
         let atlas_name = None;
-        let error = None;
 
-        TextureAtlas2DError::new(kind, multi_atlas_name, atlas_name, error)
+        TextureAtlas2DError::new(
+            kind, multi_atlas_name, atlas_name, Some(Box::new(e))
+        )
     })?;
 
     // Write out the atlas contents.

@@ -1,15 +1,28 @@
 use image::png;
-use image::{ImageDecoder};
-use serde_derive::{Deserialize, Serialize};
+use image::{
+    ImageDecoder
+};
+use serde_derive::{
+    Deserialize, 
+    Serialize
+};
 use zip::ZipArchive;
 
-use std::path::Path;
-use std::error::Error;
+use std::path::{
+    Path
+};
+use std::error;
+use std::error::{
+    Error
+};
 use std::fmt;
 use std::io;
-use std::fs::File;
-use std::collections::hash_map::HashMap;
-use std::error;
+use std::fs::{
+    File
+};
+use std::collections::hash_map::{
+    HashMap
+};
 
 
 /// The color space represented by the underlying image data.
@@ -110,6 +123,8 @@ pub enum ErrorKind {
     MissingImageBuffer,
     /// The coordinate charts for the atlas are missing.
     MissingCoordinateCharts,
+    /// An error occurred in writing out the texture atlas.
+    IoError,
 }
 
 impl fmt::Display for ErrorKind {
@@ -135,6 +150,9 @@ impl fmt::Display for ErrorKind {
             }
             ErrorKind::MissingCoordinateCharts => {
                 write!(f, "{}", "Texture atlas is missing coordinate data.")
+            }
+            ErrorKind::IoError => {
+                write!(f, "{}", "There was an error in writing out the texture atlas.")
             }
         }
     }
@@ -1001,7 +1019,12 @@ fn extract_atlas_names<R: io::Read + io::Seek>(zip_reader: &ZipArchive<R>) -> (V
 pub fn from_reader<R: io::Read + io::Seek>(reader: R, multi_atlas_name: &str) -> Result<MultiTextureAtlas2DResult, TextureAtlas2DError> {
     let mut zip_reader = zip::ZipArchive::new(reader).map_err(|e| {
         let kind = ErrorKind::CouldNotOpenTextureAtlas;
-        TextureAtlas2DError::new(kind, Some(String::from(multi_atlas_name)), None, Some(Box::new(e)))
+        TextureAtlas2DError::new(
+            kind, 
+            Some(String::from(multi_atlas_name)), 
+            None, 
+            Some(Box::new(e))
+        )
     })?;
     let (
         mut atlas_names, 
@@ -1011,12 +1034,22 @@ pub fn from_reader<R: io::Read + io::Seek>(reader: R, multi_atlas_name: &str) ->
     if !atlases_missing_coordinates.is_empty() {
         let kind = ErrorKind::MissingCoordinateCharts;
         let atlas_name = atlases_missing_coordinates[0].clone();
-        return Err(TextureAtlas2DError::new(kind, Some(String::from(multi_atlas_name)), Some(atlas_name), None));
+        return Err(TextureAtlas2DError::new(
+            kind, 
+            Some(String::from(multi_atlas_name)), 
+            Some(atlas_name), 
+            None
+        ));
     }
     if !atlases_missing_images.is_empty() {
         let kind = ErrorKind::MissingImageBuffer;
         let atlas_name = atlases_missing_images[0].clone();
-        return Err(TextureAtlas2DError::new(kind, Some(String::from(multi_atlas_name)), Some(atlas_name), None));
+        return Err(TextureAtlas2DError::new(
+            kind, 
+            Some(String::from(multi_atlas_name)), 
+            Some(atlas_name), 
+            None
+        ));
     }
 
     let mut pages = vec![];
@@ -1040,15 +1073,34 @@ pub fn from_reader<R: io::Read + io::Seek>(reader: R, multi_atlas_name: &str) ->
 
 /// Write a multi texture atlas out to any writable endpoint. This 
 /// includes files and buffers in memory.
-pub fn to_writer<W: io::Write + io::Seek>(writer: W, multi_atlas: &MultiTextureAtlas2D) -> io::Result<()> {
+pub fn to_writer<W>(writer: W, multi_atlas: &MultiTextureAtlas2D) -> Result<(), TextureAtlas2DError> 
+    where W: io::Write + io::Seek
+{
     let mut zip_file = zip::ZipWriter::new(writer);
     let options =
-        zip::write::FileOptions::default().compression_method(zip::CompressionMethod::Stored);
+        zip::write::FileOptions::default()
+            .compression_method(zip::CompressionMethod::Stored);
 
     for atlas in multi_atlas.pages() {
         // Write out the coordinate charts.
-        zip_file.start_file(format!("{}.json", &atlas.atlas_name), options)?;
-        serde_json::to_writer_pretty(&mut zip_file, &atlas.coordinate_charts())?;
+        zip_file.start_file(format!("{}.json", &atlas.atlas_name), options)
+                .map_err(|e| { 
+                    let kind = ErrorKind::IoError;
+                    let multi_atlas_name = None;
+                    let atlas_name = None;
+                    let error = None;
+
+                    TextureAtlas2DError::new(kind, multi_atlas_name, atlas_name, error)
+                })?;
+        serde_json::to_writer_pretty(&mut zip_file, &atlas.coordinate_charts())
+                   .map_err(|e| {
+                        let kind = ErrorKind::IoError;
+                        let multi_atlas_name = None;
+                        let atlas_name = None;
+                        let error = None;
+    
+                        TextureAtlas2DError::new(kind, multi_atlas_name, atlas_name, error)
+                   })?;
 
         // If the origin is the bottom left of the image, we need to flip the image back over
         // before writing it out. PNG images index start from the top left corner of
@@ -1059,17 +1111,37 @@ pub fn to_writer<W: io::Write + io::Seek>(writer: W, multi_atlas: &MultiTextureA
         orient_image(&mut image.data, atlas.origin, atlas.height, width_in_bytes);
 
         // Write out the atlas image.
-        zip_file.start_file(format!("{}.png", &atlas.atlas_name), options)?;
+        zip_file.start_file(format!("{}.png", &atlas.atlas_name), options)
+                .map_err(|e| {
+                    let kind = ErrorKind::IoError;
+                    let multi_atlas_name = None;
+                    let atlas_name = None;
+                    let error = None;
+
+                    TextureAtlas2DError::new(kind, multi_atlas_name, atlas_name, error)
+                })?;
         let png_writer = png::PNGEncoder::new(&mut zip_file);
         let height = atlas.height as u32;
         let width = atlas.width as u32;
         let color = image::ColorType::Rgba8;
-        png_writer.encode(image.as_bytes(), width, height, color).map_err(
-            |e| io::Error::new(io::ErrorKind::Other, Box::new(e))
-        )?;
+        png_writer.encode(image.as_bytes(), width, height, color).map_err(|e| {
+            let kind = ErrorKind::IoError;
+            let multi_atlas_name = None;
+            let atlas_name = None;
+            let error = None;
+
+            TextureAtlas2DError::new(kind, multi_atlas_name, atlas_name, error)
+        })?;
     }
 
-    zip_file.finish()?;
+    zip_file.finish().map_err(|e| {
+        TextureAtlas2DError::new(
+            ErrorKind::IoError, 
+            None, 
+            None,
+            Some(Box::new(e))
+        )
+    })?;
 
     Ok(())
 }
@@ -1083,20 +1155,33 @@ pub fn load_from_memory(buffer: &[u8]) -> Result<MultiTextureAtlas2DResult, Text
 /// Load a texture atlas directly from a file.
 pub fn load_file<P: AsRef<Path>>(path: P) -> Result<MultiTextureAtlas2DResult, TextureAtlas2DError> {
     let file_name = path.as_ref().file_name().map_or("", |s| s.to_str().unwrap_or(""));
-    let reader = File::open(&path).map_err(|e|{
+    let reader = File::open(&path).map_err(|e| {
         let kind = ErrorKind::CouldNotOpenTextureAtlas;
-        TextureAtlas2DError::new(kind, Some(String::from(file_name)), None, Some(Box::new(e)))
+        TextureAtlas2DError::new(
+            kind, 
+            Some(String::from(file_name)), 
+            None, 
+            Some(Box::new(e))
+        )
     })?;
     from_reader(reader, file_name)
 }
 
 /// Write a texture atlas direct to a file.
-pub fn write_to_file<P: AsRef<Path>>(path: P, multi_atlas: &MultiTextureAtlas2D) -> io::Result<()> {
+pub fn write_to_file<P: AsRef<Path>>(path: P, multi_atlas: &MultiTextureAtlas2D) -> Result<(), TextureAtlas2DError> {
     // Set up the image zip archive.
     let mut file_path = path.as_ref().to_path_buf();
     file_path.set_extension("atlas");
-    let file = File::create(&file_path)?;
+    let file = File::create(&file_path).map_err(|e| {
+        let kind = ErrorKind::IoError;
+        let multi_atlas_name = None;
+        let atlas_name = None;
+        let error = None;
+
+        TextureAtlas2DError::new(kind, multi_atlas_name, atlas_name, error)
+    })?;
 
     // Write out the atlas contents.
     to_writer(file, multi_atlas)
 }
+
